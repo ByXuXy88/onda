@@ -9,13 +9,13 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.2" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.3" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.2"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.3"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.2) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.3) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
@@ -28,7 +28,7 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | <img src="docs/images/biblioteca.png" alt="Biblioteca vacía de Onda en negro OLED, con controles por iconos" width="240" /> | <img src="docs/images/anadir.png" alt="Menú para buscar podcasts, añadir RSS o importar OPML" width="240" /> | <img src="docs/images/rss.png" alt="Formulario para añadir un podcast mediante su enlace RSS" width="240" /> |
 | Un espacio para tus programas. | Búsqueda, RSS y bibliotecas OPML. | Pega el enlace público de tu podcast. |
 
-<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.2 con una biblioteca vacía. La apariencia de los diálogos puede variar según la versión de Android.</sub>
+<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.3 con una biblioteca vacía. La apariencia de los diálogos puede variar según la versión de Android.</sub>
 
 ## Qué puedes hacer
 
@@ -51,7 +51,7 @@ Cada persona decide qué programas añadir. **Una instalación nueva no incluye 
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.2](https://github.com/ByXuXy88/onda/releases/tag/v1.2) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+1. Abre la [versión 1.3](https://github.com/ByXuXy88/onda/releases/tag/v1.3) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
 2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
