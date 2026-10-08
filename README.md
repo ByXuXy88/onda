@@ -37,7 +37,7 @@ sdk.dir=/ruta/a/android-sdk
 En Linux/macOS:
 
 ```sh
-./gradlew assembleDebug testDebugUnitTest lintDebug
+sh ./gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
 En Windows usa `gradlew.bat`. El APK aparece en `app/build/outputs/apk/debug/app-debug.apk`.
@@ -59,7 +59,7 @@ Para publicar actualizaciones, usa una clave privada estable que controles y man
 - `ONDA_KEY_ALIAS`: alias de la clave.
 - `ONDA_KEY_PASSWORD`: contraseña de la clave.
 
-Con esas variables configuradas, `./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. El APK de actualización personal entregado conserva la firma de las versiones anteriores; esa clave no se incluye en este proyecto público.
+Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. El APK de actualización personal entregado conserva la firma de las versiones anteriores; esa clave no se incluye en este proyecto público.
 
 ## Biblioteca vacía y actualización
 
