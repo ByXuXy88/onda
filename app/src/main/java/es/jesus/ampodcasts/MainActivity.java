@@ -41,6 +41,8 @@ public final class MainActivity extends Activity {
     private ListenableFuture<MediaController> controllerFuture;
     private boolean downloadedOnly, seeking, loading;
     private int displayLimit = 40;
+    private int libraryMode;
+    private ImageButton videoButton;
     private final List<Runnable> downloadLabels = new ArrayList<>();
     private final Runnable tick = new Runnable() {
         @Override public void run() {
@@ -88,13 +90,16 @@ public final class MainActivity extends Activity {
         LinearLayout tabs = row();
         allTab = icon("list", "Todos los episodios"); offlineTab = icon("download", "Tus descargas");
         ImageButton all = allTab, offline = offlineTab;
-        all.setOnClickListener(v -> { downloadedOnly = false; displayLimit = 40; render(); }); offline.setOnClickListener(v -> { downloadedOnly = true; displayLimit = 40; render(); });
+        all.setOnClickListener(v -> { downloadedOnly = false; libraryMode = 0; displayLimit = 40; render(); }); offline.setOnClickListener(v -> { downloadedOnly = true; libraryMode = 0; displayLimit = 40; render(); });
         tabs.addView(all, new LinearLayout.LayoutParams(0, dp(48), 1)); tabs.addView(offline, new LinearLayout.LayoutParams(0, dp(48), 1));
+        ImageButton collections = icon("library", "Secciones de tu biblioteca"); collections.setOnClickListener(v -> libraryMenu()); tabs.addView(collections, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        ImageButton searchLibrary = icon("search", "Buscar en tu biblioteca"); searchLibrary.setOnClickListener(v -> searchLibrary()); tabs.addView(searchLibrary, new LinearLayout.LayoutParams(dp(48), dp(48)));
         refresh = icon("refresh", "Actualizar episodios"); refresh.setContentDescription("Actualizar episodios"); refresh.setOnClickListener(v -> load()); tabs.addView(refresh, new LinearLayout.LayoutParams(dp(55), dp(48)));
         head.addView(tabs); status = label("", 12, MUTED, false); status.setPadding(0, dp(8), 0, 0); head.addView(status); root.addView(head);
         ScrollView scroll = new ScrollView(this); list = column(16); scroll.addView(list); root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout player = column(16); player.setBackgroundColor(Color.BLACK);
         current = label("Elige un episodio", 15, INK, true); current.setMaxLines(2); player.addView(current);
+        videoButton = icon("video", "Abrir vídeo actual"); videoButton.setVisibility(View.GONE); videoButton.setOnClickListener(v -> startActivity(new Intent(this, VideoActivity.class))); player.addView(videoButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
         seek = new SeekBar(this); seek.setMax(1000); player.addView(seek, new LinearLayout.LayoutParams(-1, dp(30)));
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar s, int p, boolean user) { }
@@ -132,6 +137,8 @@ public final class MainActivity extends Activity {
             try {
                 controller = controllerFuture.get();
                 controller.addListener(new Player.Listener() {
+                    @Override public void onMediaItemTransition(MediaItem item, int reason) { if (list != null) render(); updatePlayer(); }
+                    @Override public void onPlaybackStateChanged(int state) { if (state == Player.STATE_ENDED && list != null) render(); }
                     @Override public void onPlayerError(PlaybackException e) { status.setText("No se pudo reproducir. Comprueba la conexión o descarga el episodio."); }
                 });
                 if (controller.getCurrentMediaItem() == null) {
@@ -153,6 +160,7 @@ public final class MainActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); programs.setAdapter(adapter); if (!podcasts.isEmpty()) programs.setSelection(selected);
         programs.setVisibility(podcasts.isEmpty() ? View.GONE : View.VISIBLE);
         updateProgramHeader(); populating = false;
+        for (Episode e : episodes) if (repository.position(e.id) > 0 && !repository.prefs.contains("entry:" + Repository.key(e.id))) repository.remember(new LibraryEntry(e, currentPodcast()));
     }
     private void updateProgramHeader() {
         Podcast p = currentPodcast(); programTitle.setText(p.title); programDescription.setText(p.feed.isEmpty() ? "Añade tu primer podcast con +" : "Podcast de tu biblioteca");
@@ -293,25 +301,34 @@ public final class MainActivity extends Activity {
             ImageButton add = icon("add", "Añadir tu primer podcast"); add.setOnClickListener(v -> addMenu()); list.addView(add, new LinearLayout.LayoutParams(dp(64), dp(64))); return;
         }
         allTab.setAlpha(downloadedOnly ? .45f : 1f); offlineTab.setAlpha(downloadedOnly ? 1f : .45f);
-        List<Episode> ordered = new ArrayList<>(episodes); if (repository.prefs.getBoolean("oldestFirst", false)) Collections.reverse(ordered);
-        for (Episode e : ordered) {
+        List<LibraryEntry> visible = new ArrayList<>();
+        if (libraryMode == 0) { List<Episode> ordered = new ArrayList<>(episodes); if (repository.prefs.getBoolean("oldestFirst", false)) Collections.reverse(ordered); for (Episode e : ordered) visible.add(new LibraryEntry(e, currentPodcast())); }
+        else if (libraryMode == 3) visible = repository.queue();
+        else for (LibraryEntry entry : repository.remembered()) { if (libraryMode == 1 && repository.position(entry.episode.id) > 0 && !repository.listened(entry.episode.id) || libraryMode == 2 && repository.favorite(entry.episode.id)) visible.add(entry); }
+        if (libraryMode != 0) list.addView(label(libraryMode == 1 ? "Continuar escuchando" : libraryMode == 2 ? "Favoritos" : "Escuchar después", 24, INK, true));
+        for (LibraryEntry entry : visible) {
+            Episode e = entry.episode;
+            if (libraryMode == 0 && repository.prefs.getBoolean("hideListened", false) && repository.listened(e.id)) continue;
             if (downloadedOnly && repository.downloadStatus(e) < 0) continue;
             count++;
             if (count > displayLimit) continue;
             LinearLayout card = column(14); GradientDrawable surface = bg(Color.BLACK, 16); surface.setStroke(dp(1), 0xff25272b); card.setBackground(surface);
             LinearLayout.LayoutParams cardParams = new LinearLayout.LayoutParams(-1, -2); cardParams.bottomMargin = dp(10);
-            card.addView(label(prettyDate(e.date), 11, MUTED, false));
+            card.addView(label((libraryMode == 0 ? "" : entry.podcast.title + " · ") + prettyDate(e.date), 11, MUTED, false));
             TextView title = label(e.title, 16, INK, true); title.setPadding(0, dp(4), 0, dp(6)); card.addView(title);
             LinearLayout actions = row(); ImageButton play = icon("play", "Escuchar episodio"), download = icon("download", "Descargar episodio");
             TextView downloadState = label("", 11, MUTED, false);
-            play.setOnClickListener(v -> select(e, true));
+            play.setOnClickListener(v -> selectEntry(entry, true, e.url.equals(e.videoUrl)));
+            ImageButton favorite = icon(repository.favorite(e.id) ? "favorite_on" : "favorite", repository.favorite(e.id) ? "Quitar de favoritos" : "Guardar en favoritos"); favorite.setOnClickListener(v -> { repository.setFavorite(entry, !repository.favorite(e.id)); render(); });
+            ImageButton moreActions = icon("more", "Opciones del episodio"); moreActions.setOnClickListener(v -> episodeMenu(entry));
+            if (!e.videoUrl.isEmpty()) { ImageButton video = icon("video", "Ver vídeo del episodio"); video.setOnClickListener(v -> selectEntry(entry, true, true)); actions.addView(video, new LinearLayout.LayoutParams(dp(48), dp(48))); }
             download.setOnClickListener(v -> {
                 int state = repository.downloadStatus(e);
                 if (state == DownloadManager.STATUS_SUCCESSFUL || state == DownloadManager.STATUS_RUNNING || state == DownloadManager.STATUS_PENDING || state == DownloadManager.STATUS_PAUSED) {
                     new AlertDialog.Builder(this).setTitle(state == DownloadManager.STATUS_SUCCESSFUL ? "¿Eliminar la descarga?" : "¿Cancelar la descarga?")
                         .setMessage(e.title).setNegativeButton("Conservar", null).setPositiveButton("Eliminar", (d, w) -> { repository.removeDownload(e); render(); }).show();
                 } else {
-                    try { repository.download(e); Toast.makeText(this, "Descarga iniciada", Toast.LENGTH_SHORT).show(); }
+                    try { repository.remember(entry); repository.download(e); Toast.makeText(this, "Descarga iniciada", Toast.LENGTH_SHORT).show(); }
                     catch (Exception ex) { Toast.makeText(this, "No se pudo iniciar la descarga", Toast.LENGTH_LONG).show(); }
                 }
             });
@@ -319,27 +336,67 @@ public final class MainActivity extends Activity {
                 setIcon(download, s == DownloadManager.STATUS_SUCCESSFUL ? "check" : s == DownloadManager.STATUS_FAILED ? "refresh" : busy ? "close" : "download", s == DownloadManager.STATUS_SUCCESSFUL ? "Eliminar descarga" : busy ? "Cancelar descarga" : "Descargar episodio");
                 downloadState.setText(s == DownloadManager.STATUS_SUCCESSFUL ? "Disponible sin conexión" : s == DownloadManager.STATUS_FAILED ? "Descarga fallida · toca para reintentar" : busy ? "Descargando…" : ""); };
             dl.run(); downloadLabels.add(dl);
-            actions.addView(play, new LinearLayout.LayoutParams(0, dp(48), 1)); actions.addView(download, new LinearLayout.LayoutParams(0, dp(48), 1)); card.addView(actions); card.addView(downloadState); list.addView(card, cardParams);
+                        actions.addView(play, 0, new LinearLayout.LayoutParams(dp(48), dp(48))); actions.addView(download, new LinearLayout.LayoutParams(dp(48), dp(48))); actions.addView(favorite, new LinearLayout.LayoutParams(dp(48), dp(48))); actions.addView(moreActions, new LinearLayout.LayoutParams(dp(48), dp(48))); card.addView(actions); card.addView(downloadState);
+            long position = repository.position(e.id), duration = repository.prefs.getLong("duration:" + Repository.key(e.id), 0);
+            if (repository.listened(e.id)) card.addView(label("Escuchado", 12, PURPLE, false));
+            else if (position > 0) { card.addView(label("En curso · " + clock(position) + (duration > 0 ? " / " + clock(duration) : ""), 12, PURPLE, false)); if (duration > 0) { ProgressBar progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal); progress.setMax(1000); progress.setProgress((int) Math.min(1000, position * 1000 / duration)); card.addView(progress); } }
+            list.addView(card, cardParams);
         }
-        status.setText(downloadedOnly ? count + " episodios en descargas" : episodes.size() + " episodios · " + currentPodcast().title);
-        if (count == 0) list.addView(label(downloadedOnly ? "Tus descargas aparecerán aquí.\nDescarga un episodio desde Episodios." : "Conéctate a Internet para cargar este programa.", 16, MUTED, false));
+        status.setText(libraryMode != 0 ? count + " episodios en esta sección" : downloadedOnly ? count + " episodios en descargas" : count + " episodios · " + currentPodcast().title);
+        if (count == 0) list.addView(label(libraryMode != 0 ? "Los episodios que guardes o empieces a escuchar aparecerán aquí." : downloadedOnly ? "Tus descargas aparecerán aquí.\nDescarga un episodio desde Episodios." : "No hay episodios que mostrar. Actualiza el programa o revisa el filtro de escuchados.", 16, MUTED, false));
         if (count > displayLimit) { ImageButton more = icon("expand", "Mostrar más episodios"); more.setOnClickListener(v -> { displayLimit += 40; render(); }); list.addView(more); }
     }
-    private void select(Episode e, boolean start) {
-        if (controller == null) { Toast.makeText(this, "Conectando al reproductor…", Toast.LENGTH_SHORT).show(); return; }
-        MediaItem existing = controller.getCurrentMediaItem();
-        if (existing == null || !existing.mediaId.equals(e.id) || repository.localUri(e) != null) {
-            long startPosition = existing != null && existing.mediaId.equals(e.id) ? controller.getCurrentPosition() : repository.prefs.getBoolean("resumePlayback", true) ? repository.position(e.id) : 0;
-            if (controller.getPlaybackState() == Player.STATE_ENDED && existing != null && existing.mediaId.equals(e.id)) startPosition = 0;
-            MediaMetadata meta = new MediaMetadata.Builder().setTitle(e.title).setArtist(currentPodcast().title).setAlbumTitle(currentPodcast().title).setArtworkUri(currentPodcast().artwork.isEmpty() ? null : android.net.Uri.parse(currentPodcast().artwork)).build();
-            controller.setMediaItem(new MediaItem.Builder().setMediaId(e.id).setUri(repository.playbackUri(e)).setMediaMetadata(meta).build(), startPosition);
-        } else if (controller.getPlaybackState() == Player.STATE_ENDED) controller.seekTo(0);
-        controller.prepare(); if (start) controller.play(); updatePlayer();
+    private void select(Episode e, boolean start) { selectEntry(new LibraryEntry(e, currentPodcast()), start, e.url.equals(e.videoUrl)); }
+    private void selectEntry(LibraryEntry entry, boolean start, boolean video) {
+        if (controller == null) { connectPlayer(); Toast.makeText(this, "Conectando al reproductor…", Toast.LENGTH_SHORT).show(); return; }
+        Episode e = entry.episode; MediaItem existing = controller.getCurrentMediaItem();
+        boolean same = existing != null && existing.mediaId.equals(e.id);
+        long position = same ? controller.getCurrentPosition() : repository.prefs.getBoolean("resumePlayback", true) ? repository.position(e.id) : 0;
+        if (same && controller.getPlaybackState() == Player.STATE_ENDED) position = 0;
+        repository.remember(entry); repository.setListened(e.id, false);
+        try { repository.dequeue(e.id); } catch (Exception ignored) { }
+        List<MediaItem> items = new ArrayList<>(); items.add(entry.mediaItem(this, video)); for (LibraryEntry queued : repository.queue()) if (!queued.episode.id.equals(e.id)) items.add(queued.mediaItem(this, false));
+        controller.setMediaItems(items, 0, position); controller.prepare(); if (start) controller.play(); updatePlayer(); render();
+        if (video && start) startActivity(new Intent(this, VideoActivity.class));
+    }
+    private void syncQueue() {
+        if (controller == null || controller.getCurrentMediaItem() == null) return;
+        MediaItem playing = controller.getCurrentMediaItem(); long position = controller.getCurrentPosition(); boolean play = controller.getPlayWhenReady();
+        List<MediaItem> items = new ArrayList<>(); items.add(playing); for (LibraryEntry queued : repository.queue()) if (!queued.episode.id.equals(playing.mediaId)) items.add(queued.mediaItem(this, false));
+        controller.setMediaItems(items, 0, position); controller.prepare(); if (play) controller.play();
+    }
+    private void libraryMenu() {
+        new AlertDialog.Builder(this).setTitle("Tu biblioteca").setItems(new String[]{"Episodios del programa", "Continuar escuchando", "Favoritos", "Escuchar después"}, (dialog, index) -> { libraryMode = index; downloadedOnly = false; displayLimit = 40; render(); }).setNegativeButton("Cerrar", null).show();
+    }
+    private void episodeMenu(LibraryEntry entry) {
+        Episode e = entry.episode; List<String> options = new ArrayList<>(); options.add(repository.listened(e.id) ? "Marcar como no escuchado" : "Marcar como escuchado"); options.add("Añadir a Escuchar después");
+        if (libraryMode == 3) { options.add("Mover antes"); options.add("Mover después"); options.add("Quitar de la cola"); }
+        new AlertDialog.Builder(this).setTitle(e.title).setItems(options.toArray(new String[0]), (dialog, index) -> {
+            try {
+                if (index == 0) { if (controller != null && controller.getCurrentMediaItem() != null && controller.getCurrentMediaItem().mediaId.equals(e.id)) { controller.pause(); controller.seekTo(0); } repository.remember(entry); repository.setListened(e.id, !repository.listened(e.id)); }
+                else if (index == 1) { if (controller != null && controller.getCurrentMediaItem() != null && controller.getCurrentMediaItem().mediaId.equals(e.id)) { Toast.makeText(this, "Este episodio ya está en reproducción", Toast.LENGTH_SHORT).show(); return; } boolean added = repository.enqueue(entry); Toast.makeText(this, added ? "Añadido a Escuchar después" : "Ya está en la cola", Toast.LENGTH_SHORT).show(); syncQueue(); }
+                else if (index == 2 || index == 3) { repository.moveQueue(e.id, index == 2 ? -1 : 1); syncQueue(); }
+                else { repository.dequeue(e.id); syncQueue(); }
+                render();
+            } catch (Exception ex) { Toast.makeText(this, "No se pudo actualizar la cola", Toast.LENGTH_LONG).show(); }
+        }).setNegativeButton("Cerrar", null).show();
+    }
+    private void searchLibrary() {
+        EditText input = new EditText(this); input.setHint("Título de un episodio"); input.setSingleLine(true);
+        LinearLayout box = column(16); box.addView(input); TextView message = label("Busca entre los episodios guardados de todos tus programas.", 13, MUTED, false); box.addView(message);
+        Button search = new Button(this); search.setText("Buscar"); search.setAllCaps(false); box.addView(search); ScrollView scroll = new ScrollView(this); LinearLayout results = column(0); scroll.addView(results); box.addView(scroll, new LinearLayout.LayoutParams(-1, dp(260)));
+        AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Buscar en tu biblioteca").setView(box).setNegativeButton("Cerrar", null).create();
+        search.setOnClickListener(v -> { String query = input.getText().toString().trim(); if (query.length() < 2) { input.setError("Escribe al menos dos letras"); return; } search.setEnabled(false); message.setText("Buscando…");
+            worker.execute(() -> { List<LibraryEntry> found = repository.searchLibrary(query); runOnUiThread(() -> { if (isDestroyed() || !dialog.isShowing()) return; search.setEnabled(true); results.removeAllViews(); message.setText(found.isEmpty() ? "Sin resultados. Actualiza tus programas para guardar sus episodios." : found.size() + " resultados · toca uno para escuchar");
+                for (LibraryEntry entry : found.subList(0, Math.min(found.size(), 100))) { TextView title = label(entry.episode.title + "\n" + entry.podcast.title, 15, INK, false); title.setPadding(dp(8), dp(12), dp(8), dp(12)); title.setOnClickListener(w -> { dialog.dismiss(); selectEntry(entry, true, entry.episode.url.equals(entry.episode.videoUrl)); }); results.addView(title); }
+            }); });
+        }); dialog.show();
     }
     private void updatePlayer() {
         boolean has = controller != null && controller.getCurrentMediaItem() != null;
         toggle.setEnabled(has); seek.setEnabled(has);
         long remaining = repository.prefs.getLong("sleepDeadline", 0) - SystemClock.elapsedRealtime(); sleep.setAlpha(remaining > 0 ? 1f : .5f); sleep.setContentDescription(remaining > 0 ? "Temporizador: " + (remaining + 59999) / 60000 + " minutos restantes" : "Temporizador para dormir");
+        videoButton.setVisibility(has && controller.getMediaMetadata().extras != null && controller.getMediaMetadata().extras.getBoolean("video", false) ? View.VISIBLE : View.GONE);
         if (!has) return;
         current.setText(controller.getMediaMetadata().title); long duration = Math.max(0, controller.getDuration()), position = Math.max(0, controller.getCurrentPosition());
         if (!seeking) seek.setProgress(duration > 0 ? (int) (position * 1000 / duration) : 0);

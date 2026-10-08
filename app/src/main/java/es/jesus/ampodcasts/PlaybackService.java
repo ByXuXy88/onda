@@ -32,13 +32,26 @@ public final class PlaybackService extends MediaSessionService {
         player.setWakeMode(C.WAKE_MODE_LOCAL);
         applyPreferences(); repository.prefs.registerOnSharedPreferenceChangeListener(preferencesChanged);
         player.addListener(new Player.Listener() {
-            @Override public void onMediaItemTransition(MediaItem item, int reason) { previousId = item == null ? "" : item.mediaId; save(); }
+            @Override public void onMediaItemTransition(MediaItem item, int reason) {
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !previousId.isEmpty()) repository.setListened(previousId, true);
+                previousId = item == null ? "" : item.mediaId;
+                if (item != null) {
+                    if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && repository.prefs.getBoolean("resumePlayback", true)) { long position = repository.position(item.mediaId); if (position > 0) player.seekTo(position); }
+                    repository.prefs.edit().putLong("touched:" + Repository.key(item.mediaId), System.currentTimeMillis()).apply();
+                    try { repository.dequeue(item.mediaId); } catch (Exception ignored) { }
+                }
+                save();
+            }
             @Override public void onIsPlayingChanged(boolean isPlaying) { save(); }
+            @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
             @Override public void onPositionDiscontinuity(Player.PositionInfo oldPos, Player.PositionInfo newPos, int reason) {
-                if (!previousId.isEmpty()) repository.savePosition(previousId, oldPos.positionMs);
+                if (oldPos.mediaItem != null) {
+                    if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) repository.setListened(oldPos.mediaItem.mediaId, true);
+                    else repository.savePosition(oldPos.mediaItem.mediaId, oldPos.positionMs);
+                }
             }
             @Override public void onPlaybackStateChanged(int state) {
-                if (state == Player.STATE_ENDED && !previousId.isEmpty()) repository.savePosition(previousId, 0);
+                if (state == Player.STATE_ENDED && !previousId.isEmpty()) repository.setListened(previousId, true);
             }
         });
         PendingIntent activity = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
@@ -50,11 +63,13 @@ public final class PlaybackService extends MediaSessionService {
         if (player == null) return;
         player.setPlaybackSpeed(repository.prefs.getFloat("speed", 1f));
         player.setSkipSilenceEnabled(repository.prefs.getBoolean("skipSilence", false));
+        player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().setForceHighestSupportedBitrate(true).build());
     }
     private void save() {
         MediaItem item = player == null ? null : player.getCurrentMediaItem();
         if (item != null && player.getPlaybackState() != Player.STATE_ENDED) {
             repository.savePosition(item.mediaId, player.getCurrentPosition());
+            if (player.getDuration() > 0) repository.prefs.edit().putLong("duration:" + Repository.key(item.mediaId), player.getDuration()).apply();
             repository.prefs.edit().putString("last", item.mediaId).apply();
         }
     }

@@ -14,6 +14,10 @@ final class ControlIcon extends Drawable {
         c.save(); c.translate(b.exactCenterX() - 12 * scale, b.exactCenterY() - 12 * scale); c.scale(scale, scale);
         paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(1.8f);
         switch (type) {
+            case "video": c.drawRoundRect(3, 6, 16, 18, 2, 2, paint); { Path p = new Path(); p.moveTo(16, 10); p.lineTo(21, 7); p.lineTo(21, 17); p.lineTo(16, 14); c.drawPath(p, paint); } break;
+            case "library": c.drawRoundRect(3, 4, 7, 20, 1, 1, paint); c.drawRoundRect(10, 4, 14, 20, 1, 1, paint); c.drawLine(17, 5, 21, 19, paint); break;
+            case "more": paint.setStyle(Paint.Style.FILL); for (int y = 5; y <= 19; y += 7) c.drawCircle(12, y, 1.5f, paint); break;
+            case "favorite": case "favorite_on": { if (type.equals("favorite_on")) paint.setStyle(Paint.Style.FILL); Path p = new Path(); p.moveTo(12, 20); p.cubicTo(9, 17, 3, 13, 3, 8); p.cubicTo(3, 3, 9, 2, 12, 7); p.cubicTo(15, 2, 21, 3, 21, 8); p.cubicTo(21, 13, 15, 17, 12, 20); p.close(); c.drawPath(p, paint); break; }
             case "settings": {
                 c.drawCircle(12, 12, 6, paint); c.drawCircle(12, 12, 2, paint);
                 for (int angle = 0; angle < 360; angle += 60) { c.save(); c.rotate(angle, 12, 12); c.drawLine(12, 3, 12, 6, paint); c.restore(); } break;

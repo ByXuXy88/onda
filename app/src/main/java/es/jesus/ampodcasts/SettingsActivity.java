@@ -20,7 +20,10 @@ public final class SettingsActivity extends Activity {
         scroll.setOnApplyWindowInsetsListener((v, insets) -> { v.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom()); return insets; });
         content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(dp(20), dp(16), dp(20), dp(24)); scroll.addView(content); setContentView(scroll);
         ImageButton back = new ImageButton(this); back.setImageDrawable(new ControlIcon("back", 0xffa8c7fa, dp(24))); back.setBackgroundColor(Color.TRANSPARENT); back.setContentDescription("Volver a la biblioteca"); back.setOnClickListener(v -> finish()); content.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        title("Ajustes", 28); title("Reproducción", 18);
+        title("Ajustes", 28); title("Calidad de audio y vídeo", 18);
+        text("Calidad original · Máxima disponible", 16);
+        text("Onda no recomprime los archivos. Si el RSS indica varias versiones, elige la de mayor bitrate; la calidad final depende del archivo publicado y de los formatos que admite tu dispositivo. El vídeo aparece solo cuando el podcast lo ofrece en su RSS.", 13);
+        title("Reproducción", 18);
         text("Velocidad de reproducción", 15);
         Spinner speed = new Spinner(this); String[] speeds = {"0,75×", "1× · Normal", "1,25×", "1,5×", "1,75×", "2×"}; float[] values = {.75f, 1f, 1.25f, 1.5f, 1.75f, 2f};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, speeds); adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); speed.setAdapter(adapter);
@@ -32,6 +35,8 @@ public final class SettingsActivity extends Activity {
         option("wifiOnly", "Descargar solo por Wi‑Fi", "Se aplica a las nuevas descargas. Las que ya están en curso conservan su configuración.", false);
         option("autoRefresh", "Actualizar al abrir un programa", "Busca nuevos episodios cuando abres Onda o cambias de podcast.", true);
         option("oldestFirst", "Episodios antiguos primero", "Invierte el orden del RSS para escuchar desde el principio.", false);
+        option("hideListened", "Ocultar episodios escuchados", "Se aplica a la lista de episodios del programa. Tus favoritos se conservan.", false);
+        action("Gestionar espacio de descargas", () -> startActivity(new Intent(this, DownloadsActivity.class)));
         title("Tu biblioteca", 18);
         action("Exportar biblioteca OPML", () -> { Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("text/xml").putExtra(Intent.EXTRA_TITLE, "Onda-biblioteca.opml"); startActivityForResult(intent, 43); });
         text("Guarda tus programas y sus RSS para importarlos en Onda u otra aplicación. El archivo no incluye descargas ni posiciones de escucha.", 13);

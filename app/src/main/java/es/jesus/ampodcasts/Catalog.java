@@ -25,7 +25,7 @@ final class Catalog {
     }
     private static List<Podcast> request(String endpoint) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(endpoint).openConnection();
-        c.setConnectTimeout(15000); c.setReadTimeout(20000); c.setRequestProperty("User-Agent", "Onda/1.4 Android");
+        c.setConnectTimeout(15000); c.setReadTimeout(20000); c.setRequestProperty("User-Agent", "Onda/1.5 Android");
         try {
             if (c.getResponseCode() != 200) throw new IOException("No se pudo consultar el catálogo");
             try (InputStream in = c.getInputStream()) {

@@ -51,6 +51,7 @@ final class Repository {
             for (Episode e : target.cached()) target.removeDownload(e);
         }
         List<Podcast> list = podcasts(); list.removeIf(p -> p.feed.equals(feed)); savePodcasts(list);
+        List<LibraryEntry> queue = queue(); queue.removeIf(e -> e.podcast.feed.equals(feed)); saveQueue(queue);
     }
     synchronized boolean addPodcast(Podcast podcast) throws Exception {
         List<Podcast> list = podcasts();
@@ -117,14 +118,14 @@ final class Repository {
     FeedResult refreshFeed() throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(normalizeFeed(feed)).openConnection();
         conn.setConnectTimeout(15000); conn.setReadTimeout(25000);
-        conn.setRequestProperty("User-Agent", "Onda/1.4 Android");
+        conn.setRequestProperty("User-Agent", "Onda/1.5 Android");
         FeedResult result;
         try {
             if (conn.getResponseCode() != 200) throw new IOException("La fuente no responde (" + conn.getResponseCode() + ")");
             try (InputStream in = conn.getInputStream()) { result = parseFeed(in); }
         } finally { conn.disconnect(); }
         List<Episode> list = new ArrayList<>();
-        for (Episode e : result.episodes) list.add(new Episode(episodeId(e.id), e.title, e.date, e.url));
+        for (Episode e : result.episodes) list.add(new Episode(episodeId(e.id), e.title, e.date, e.url, e.videoUrl));
         if (list.isEmpty()) throw new IOException("La fuente no contiene episodios reproducibles");
         JSONArray a = new JSONArray(); for (Episode e : list) a.put(e.json());
         AtomicFile f = new AtomicFile(cacheFile());
@@ -144,12 +145,12 @@ final class Repository {
     static FeedResult parseFeed(InputStream in) throws Exception {
         XmlPullParser p = Xml.newPullParser(); p.setInput(in, null);
         List<Episode> result = new ArrayList<>();
-        String title = "", date = "", id = "", url = "", channelTitle = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false;
+        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1;
         for (int event = p.getEventType(); event != XmlPullParser.END_DOCUMENT; event = p.nextToken()) {
             if (event == XmlPullParser.DOCDECL) throw new IOException("Fuente XML no válida");
             if (event == XmlPullParser.START_TAG) {
                 String name = p.getName();
-                if (name.equals("item")) { item = true; title = date = id = url = ""; }
+                if (name.equals("item")) { item = true; title = date = id = url = videoUrl = ""; audioQuality = videoQuality = -1; }
                 else if (!item && (name.equals("image") || name.equals("itunes:image"))) {
                     String href = p.getAttributeValue(null, "href");
                     if (href != null) artwork = Podcast.artworkUrl(href); else channelImage = true;
@@ -160,15 +161,30 @@ final class Repository {
                     if (name.equals("title")) title = p.nextText();
                     else if (name.equals("pubDate")) date = p.nextText();
                     else if (name.equals("guid")) id = p.nextText();
-                    else if (name.equals("enclosure")) { String u = p.getAttributeValue(null, "url"); if (u != null) url = u; }
+                    else if (name.equals("enclosure") || name.equals("media:content") || name.equals("content")) {
+                        String u = p.getAttributeValue(null, "url"); if (u == null || !u.startsWith("https://")) continue;
+                        String type = p.getAttributeValue(null, "type"), medium = p.getAttributeValue(null, "medium");
+                        boolean explicitAudio = (type != null && type.startsWith("audio/")) || "audio".equals(medium);
+                        boolean video = (type != null && type.startsWith("video/")) || "video".equals(medium) || (!explicitAudio && u.toLowerCase(Locale.ROOT).matches(".*\\.(mp4|m4v|webm|mov)(\\?.*)?$"));
+                        boolean audio = (type != null && type.startsWith("audio/")) || "audio".equals(medium) || (!video && name.equals("enclosure")) || u.toLowerCase(Locale.ROOT).matches(".*\\.(mp3|m4a|aac|flac|ogg|opus)(\\?.*)?$");
+                        long quality = mediaQuality(p);
+                        if (video && quality > videoQuality) { videoUrl = u; videoQuality = quality; }
+                        else if (audio && quality > audioQuality) { url = u; audioQuality = quality; }
+                    }
                 }
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("image")) { channelImage = false;
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("item")) {
-                if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url));
+                if (url.isEmpty()) url = videoUrl;
+                if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url, videoUrl));
                 item = false;
             }
         }
         return new FeedResult(channelTitle.isEmpty() ? "Podcast" : channelTitle, artwork.isEmpty() ? rssArtwork : artwork, result);
+    }
+    private static long mediaQuality(XmlPullParser parser) {
+        try { String rate = parser.getAttributeValue(null, "bitrate"); if (rate != null) return Math.min(1_000_000_000L, Math.max(0, Long.parseLong(rate))); } catch (Exception ignored) { }
+        try { String height = parser.getAttributeValue(null, "height"); if (height != null) return Math.min(100_000L, Math.max(0, Long.parseLong(height))); } catch (Exception ignored) { }
+        return 0;
     }
     static String key(String id) {
         try {
@@ -178,6 +194,59 @@ final class Repository {
     }
     long position(String id) { return prefs.getLong("pos:" + key(id), 0); }
     void savePosition(String id, long pos) { if (!id.isEmpty()) prefs.edit().putLong("pos:" + key(id), Math.max(0, pos)).apply(); }
+    boolean listened(String id) { return prefs.getBoolean("played:" + key(id), false); }
+    void setListened(String id, boolean value) { prefs.edit().putBoolean("played:" + key(id), value).apply(); if (value) savePosition(id, 0); }
+    boolean favorite(String id) { return prefs.getBoolean("favorite:" + key(id), false); }
+    void setFavorite(LibraryEntry entry, boolean value) { remember(entry); prefs.edit().putBoolean("favorite:" + key(entry.episode.id), value).apply(); }
+    void remember(LibraryEntry entry) {
+        try { prefs.edit().putString("entry:" + key(entry.episode.id), entry.json().toString()).putLong("touched:" + key(entry.episode.id), System.currentTimeMillis()).apply(); } catch (Exception ignored) { }
+    }
+    List<LibraryEntry> remembered() {
+        Set<String> feeds = new HashSet<>(); for (Podcast p : podcasts()) feeds.add(p.feed);
+        List<LibraryEntry> list = new ArrayList<>();
+        for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) if (entry.getKey().startsWith("entry:")) {
+            try { LibraryEntry value = LibraryEntry.from(new org.json.JSONObject((String) entry.getValue())); if (feeds.contains(value.podcast.feed)) list.add(value); } catch (Exception ignored) { }
+        }
+        list.sort((a, b) -> Long.compare(prefs.getLong("touched:" + key(b.episode.id), 0), prefs.getLong("touched:" + key(a.episode.id), 0))); return list;
+    }
+    List<LibraryEntry> searchLibrary(String term) {
+        String query = term.toLowerCase(Locale.ROOT).trim(); LinkedHashMap<String, LibraryEntry> result = new LinkedHashMap<>();
+        for (LibraryEntry entry : remembered()) if (entry.episode.title.toLowerCase(Locale.ROOT).contains(query)) result.put(entry.episode.id, entry);
+        for (Podcast p : podcasts()) for (Episode e : new Repository(context, p.feed).cached()) if (e.title.toLowerCase(Locale.ROOT).contains(query)) result.putIfAbsent(e.id, new LibraryEntry(e, p));
+        return new ArrayList<>(result.values());
+    }
+    List<LibraryEntry> queue() {
+        List<LibraryEntry> result = new ArrayList<>();
+        try { JSONArray array = new JSONArray(prefs.getString("queue", "[]")); for (int i = 0; i < array.length(); i++) result.add(LibraryEntry.from(array.getJSONObject(i))); } catch (Exception ignored) { }
+        return result;
+    }
+    private void saveQueue(List<LibraryEntry> list) throws Exception { JSONArray array = new JSONArray(); for (LibraryEntry entry : list) array.put(entry.json()); if (!prefs.edit().putString("queue", array.toString()).commit()) throw new IOException("No se pudo guardar la cola"); }
+    synchronized boolean enqueue(LibraryEntry entry) throws Exception {
+        List<LibraryEntry> list = queue(); for (LibraryEntry existing : list) if (existing.episode.id.equals(entry.episode.id)) return false;
+        if (list.size() >= 200) throw new IOException("La cola admite hasta 200 episodios"); remember(entry); list.add(entry); saveQueue(list); return true;
+    }
+    synchronized void dequeue(String id) throws Exception { List<LibraryEntry> list = queue(); list.removeIf(e -> e.episode.id.equals(id)); saveQueue(list); }
+    synchronized void moveQueue(String id, int direction) throws Exception {
+        List<LibraryEntry> list = queue(); for (int i = 0; i < list.size(); i++) if (list.get(i).episode.id.equals(id)) { int target = i + direction; if (target >= 0 && target < list.size()) { Collections.swap(list, i, target); saveQueue(list); } return; }
+    }
+    static final class StoredDownload {
+        final long id, bytes; final String title; final int status; final boolean played;
+        StoredDownload(long id, long bytes, String title, int status, boolean played) { this.id = id; this.bytes = bytes; this.title = title; this.status = status; this.played = played; }
+    }
+    List<StoredDownload> storedDownloads() {
+        List<StoredDownload> result = new ArrayList<>(); Map<String, ?> all = prefs.getAll();
+        for (Map.Entry<String, ?> entry : all.entrySet()) if (entry.getKey().startsWith("download:") && entry.getValue() instanceof Long) {
+            long id = (Long) entry.getValue();
+            try (Cursor c = downloads.query(new DownloadManager.Query().setFilterById(id))) {
+                if (c != null && c.moveToFirst()) result.add(new StoredDownload(id, Math.max(0, c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))), c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE)), c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)), prefs.getBoolean("played:" + entry.getKey().substring(9), false)));
+            }
+        }
+        result.sort(java.util.Comparator.comparing(d -> d.title == null ? "" : d.title)); return result;
+    }
+    void removeStoredDownload(long id) {
+        downloads.remove(id); SharedPreferences.Editor edit = prefs.edit();
+        for (Map.Entry<String, ?> entry : prefs.getAll().entrySet()) if (entry.getKey().startsWith("download:") && entry.getValue() instanceof Long && ((Long) entry.getValue()) == id) edit.remove(entry.getKey()); edit.apply();
+    }
     long downloadId(Episode e) { return prefs.getLong("download:" + key(e.id), -1); }
     int downloadStatus(Episode e) {
         long id = downloadId(e); if (id < 0) return -1;
@@ -197,7 +266,7 @@ final class Repository {
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             .setAllowedNetworkTypes(prefs.getBoolean("wifiOnly", false) ? DownloadManager.Request.NETWORK_WIFI : DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE)
             .setAllowedOverMetered(!prefs.getBoolean("wifiOnly", false)).setAllowedOverRoaming(false)
-            .setDestinationInExternalFilesDir(context, "episodes", key(e.id) + "-" + System.currentTimeMillis() + ".mp3");
+            .setDestinationInExternalFilesDir(context, "episodes", key(e.id) + "-" + System.currentTimeMillis() + (e.url.equals(e.videoUrl) ? ".mp4" : ".audio"));
         long id = downloads.enqueue(r); prefs.edit().putLong("download:" + key(e.id), id).apply();
     }
     void removeDownload(Episode e) { long id = downloadId(e); if (id >= 0) downloads.remove(id); prefs.edit().remove("download:" + key(e.id)).apply(); }
