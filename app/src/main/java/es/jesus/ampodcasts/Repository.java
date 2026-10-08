@@ -58,6 +58,22 @@ final class Repository {
         list.add(podcast); savePodcasts(list);
         return true;
     }
+    synchronized void updateArtwork(String feed, String artwork) throws Exception {
+        if (artwork.isEmpty()) return;
+        List<Podcast> list = podcasts();
+        for (int n = 0; n < list.size(); n++) {
+            Podcast p = list.get(n);
+            if (p.feed.equals(feed) && !p.artwork.equals(artwork)) { list.set(n, new Podcast(p.title, p.feed, artwork)); savePodcasts(list); return; }
+        }
+    }
+    void exportOpml(OutputStream out) throws Exception {
+        org.xmlpull.v1.XmlSerializer xml = Xml.newSerializer(); xml.setOutput(out, "UTF-8"); xml.startDocument("UTF-8", true);
+        xml.startTag(null, "opml").attribute(null, "version", "2.0");
+        xml.startTag(null, "head").startTag(null, "title").text("Biblioteca de Onda").endTag(null, "title").endTag(null, "head");
+        xml.startTag(null, "body");
+        for (Podcast p : podcasts()) xml.startTag(null, "outline").attribute(null, "type", "rss").attribute(null, "text", p.title).attribute(null, "title", p.title).attribute(null, "xmlUrl", p.feed).endTag(null, "outline");
+        xml.endTag(null, "body").endTag(null, "opml"); xml.endDocument(); xml.flush();
+    }
     static String normalizeFeed(String text) throws Exception {
         java.net.URI uri = new java.net.URI(text.trim());
         if (!"https".equalsIgnoreCase(uri.getScheme()) || uri.getHost() == null || uri.getUserInfo() != null) throw new IOException("Introduce un enlace RSS público que empiece por https://");
@@ -101,7 +117,7 @@ final class Repository {
     FeedResult refreshFeed() throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(normalizeFeed(feed)).openConnection();
         conn.setConnectTimeout(15000); conn.setReadTimeout(25000);
-        conn.setRequestProperty("User-Agent", "Onda/1.2 Android");
+        conn.setRequestProperty("User-Agent", "Onda/1.4 Android");
         FeedResult result;
         try {
             if (conn.getResponseCode() != 200) throw new IOException("La fuente no responde (" + conn.getResponseCode() + ")");
@@ -115,37 +131,44 @@ final class Repository {
         FileOutputStream out = f.startWrite();
         try { out.write(a.toString().getBytes(StandardCharsets.UTF_8)); f.finishWrite(out); }
         catch (Exception e) { f.failWrite(out); throw e; }
-        return new FeedResult(result.title, list);
+        updateArtwork(feed, result.artwork);
+        return new FeedResult(result.title, result.artwork, list);
     }
     static List<Episode> parse(InputStream in) throws Exception {
         return parseFeed(in).episodes;
     }
     static final class FeedResult {
-        final String title; final List<Episode> episodes;
-        FeedResult(String title, List<Episode> episodes) { this.title = title; this.episodes = episodes; }
+        final String title, artwork; final List<Episode> episodes;
+        FeedResult(String title, String artwork, List<Episode> episodes) { this.title = title; this.artwork = artwork; this.episodes = episodes; }
     }
     static FeedResult parseFeed(InputStream in) throws Exception {
         XmlPullParser p = Xml.newPullParser(); p.setInput(in, null);
         List<Episode> result = new ArrayList<>();
-        String title = "", date = "", id = "", url = "", channelTitle = ""; boolean item = false;
+        String title = "", date = "", id = "", url = "", channelTitle = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false;
         for (int event = p.getEventType(); event != XmlPullParser.END_DOCUMENT; event = p.nextToken()) {
             if (event == XmlPullParser.DOCDECL) throw new IOException("Fuente XML no válida");
             if (event == XmlPullParser.START_TAG) {
                 String name = p.getName();
                 if (name.equals("item")) { item = true; title = date = id = url = ""; }
-                else if (!item && name.equals("title") && channelTitle.isEmpty()) channelTitle = p.nextText();
+                else if (!item && (name.equals("image") || name.equals("itunes:image"))) {
+                    String href = p.getAttributeValue(null, "href");
+                    if (href != null) artwork = Podcast.artworkUrl(href); else channelImage = true;
+                }
+                else if (!item && channelImage && name.equals("url")) rssArtwork = Podcast.artworkUrl(p.nextText());
+                else if (!item && !channelImage && name.equals("title") && channelTitle.isEmpty()) channelTitle = p.nextText();
                 else if (item) {
                     if (name.equals("title")) title = p.nextText();
                     else if (name.equals("pubDate")) date = p.nextText();
                     else if (name.equals("guid")) id = p.nextText();
                     else if (name.equals("enclosure")) { String u = p.getAttributeValue(null, "url"); if (u != null) url = u; }
                 }
+            } else if (event == XmlPullParser.END_TAG && p.getName().equals("image")) { channelImage = false;
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("item")) {
                 if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url));
                 item = false;
             }
         }
-        return new FeedResult(channelTitle.isEmpty() ? "Podcast" : channelTitle, result);
+        return new FeedResult(channelTitle.isEmpty() ? "Podcast" : channelTitle, artwork.isEmpty() ? rssArtwork : artwork, result);
     }
     static String key(String id) {
         try {
@@ -172,7 +195,8 @@ final class Repository {
         long old = downloadId(e); if (old >= 0) downloads.remove(old);
         DownloadManager.Request r = new DownloadManager.Request(Uri.parse(e.url)).setTitle(e.title).setDescription("Onda")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setAllowedOverMetered(true).setAllowedOverRoaming(false)
+            .setAllowedNetworkTypes(prefs.getBoolean("wifiOnly", false) ? DownloadManager.Request.NETWORK_WIFI : DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE)
+            .setAllowedOverMetered(!prefs.getBoolean("wifiOnly", false)).setAllowedOverRoaming(false)
             .setDestinationInExternalFilesDir(context, "episodes", key(e.id) + "-" + System.currentTimeMillis() + ".mp3");
         long id = downloads.enqueue(r); prefs.edit().putLong("download:" + key(e.id), id).apply();
     }

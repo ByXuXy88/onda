@@ -14,6 +14,12 @@ final class ControlIcon extends Drawable {
         c.save(); c.translate(b.exactCenterX() - 12 * scale, b.exactCenterY() - 12 * scale); c.scale(scale, scale);
         paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(1.8f);
         switch (type) {
+            case "settings": {
+                c.drawCircle(12, 12, 6, paint); c.drawCircle(12, 12, 2, paint);
+                for (int angle = 0; angle < 360; angle += 60) { c.save(); c.rotate(angle, 12, 12); c.drawLine(12, 3, 12, 6, paint); c.restore(); } break;
+            }
+            case "back": c.drawLine(19, 12, 5, 12, paint); c.drawLine(5, 12, 11, 6, paint); c.drawLine(5, 12, 11, 18, paint); break;
+            case "timer": c.drawCircle(12, 13, 8, paint); c.drawLine(9, 2, 15, 2, paint); c.drawLine(12, 5, 12, 2, paint); c.drawLine(12, 8, 12, 13, paint); c.drawLine(12, 13, 15, 15, paint); break;
             case "search": c.drawCircle(10, 10, 6, paint); c.drawLine(15, 15, 21, 21, paint); break;
             case "play": { paint.setStyle(Paint.Style.FILL); Path p = new Path(); p.moveTo(8, 5); p.lineTo(19, 12); p.lineTo(8, 19); p.close(); c.drawPath(p, paint); break; }
             case "pause": paint.setStyle(Paint.Style.FILL); c.drawRoundRect(7, 5, 10, 19, .75f, .75f, paint); c.drawRoundRect(14, 5, 17, 19, .75f, .75f, paint); break;

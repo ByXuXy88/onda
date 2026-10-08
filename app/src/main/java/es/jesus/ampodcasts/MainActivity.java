@@ -21,6 +21,8 @@ public final class MainActivity extends Activity {
     private static final int PURPLE = 0xffa8c7fa, INK = 0xfff2f2f2, MUTED = 0xffa6abb3;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final ExecutorService images = Executors.newFixedThreadPool(2);
+    private ArtworkStore artworkStore;
     private Repository repository;
     private List<Episode> episodes = new ArrayList<>();
     private LinearLayout list;
@@ -28,6 +30,8 @@ public final class MainActivity extends Activity {
     private ImageButton toggle, refresh, allTab, offlineTab, remove;
     private Spinner programs;
     private TextView programTitle, programDescription, cover;
+    private ImageView coverImage;
+    private ImageButton sleep;
     private List<Podcast> podcasts = new ArrayList<>();
     private int requestGeneration;
     private boolean populating;
@@ -44,7 +48,7 @@ public final class MainActivity extends Activity {
         }
     };
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state); repository = new Repository(this);
+        super.onCreate(state); repository = new Repository(this); artworkStore = new ArtworkStore(this);
         List<Podcast> saved = repository.podcasts();
         String selectedFeed = repository.prefs.getString("selectedFeed", "");
         boolean exists = false; for (Podcast p : saved) if (p.feed.equals(selectedFeed)) exists = true;
@@ -61,7 +65,8 @@ public final class MainActivity extends Activity {
         LinearLayout titleRow = row();
         titleRow.addView(label("Onda", 32, INK, true), new LinearLayout.LayoutParams(0, -2, 1));
         ImageButton add = icon("add", "Añadir podcasts"); add.setOnClickListener(v -> addMenu());
-        titleRow.addView(add, new LinearLayout.LayoutParams(dp(48), dp(48))); head.addView(titleRow);
+        titleRow.addView(add, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        ImageButton settings = icon("settings", "Ajustes"); settings.setOnClickListener(v -> startActivity(new Intent(this, SettingsActivity.class))); titleRow.addView(settings, new LinearLayout.LayoutParams(dp(48), dp(48))); head.addView(titleRow);
         programs = new Spinner(this); head.addView(programs);
         programs.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             public void onNothingSelected(AdapterView<?> parent) {}
@@ -71,7 +76,9 @@ public final class MainActivity extends Activity {
         });
         LinearLayout show = row(); show.setPadding(0, dp(12), 0, dp(12));
         cover = label("+", 32, Color.WHITE, true); cover.setGravity(Gravity.CENTER); cover.setBackground(bg(0xff183e37, 18));
-        show.addView(cover, new LinearLayout.LayoutParams(dp(86), dp(86)));
+        FrameLayout artwork = new FrameLayout(this); artwork.setBackground(bg(0xff183e37, 18)); artwork.setClipToOutline(true); artwork.addView(cover, new FrameLayout.LayoutParams(-1, -1));
+        coverImage = new ImageView(this); coverImage.setScaleType(ImageView.ScaleType.CENTER_CROP); coverImage.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); artwork.addView(coverImage, new FrameLayout.LayoutParams(-1, -1));
+        show.addView(artwork, new LinearLayout.LayoutParams(dp(86), dp(86)));
         LinearLayout description = column(0); description.setPadding(dp(16), 0, 0, 0);
         programTitle = label("Tu biblioteca", 23, INK, true); programTitle.setMaxLines(2); description.addView(programTitle);
         programDescription = label("Tu biblioteca de podcasts", 14, MUTED, false); description.addView(programDescription);
@@ -99,16 +106,24 @@ public final class MainActivity extends Activity {
         back.setOnClickListener(v -> { if (controller != null) controller.seekTo(Math.max(0, controller.getCurrentPosition() - 15000)); });
         forward.setOnClickListener(v -> { if (controller != null) controller.seekTo(Math.min(Math.max(0, controller.getDuration() > 0 ? controller.getDuration() : Long.MAX_VALUE), controller.getCurrentPosition() + 30000)); });
         toggle.setOnClickListener(v -> { if (controller == null) return; if (controller.isPlaying()) controller.pause(); else { if (controller.getPlaybackState() == Player.STATE_ENDED) controller.seekTo(0); controller.prepare(); controller.play(); } });
-        controls.addView(back, new LinearLayout.LayoutParams(0, dp(48), 1)); controls.addView(toggle, new LinearLayout.LayoutParams(0, dp(48), 2)); controls.addView(forward, new LinearLayout.LayoutParams(0, dp(48), 1)); player.addView(controls); root.addView(player);
+        controls.addView(back, new LinearLayout.LayoutParams(0, dp(48), 1)); controls.addView(toggle, new LinearLayout.LayoutParams(0, dp(48), 2)); controls.addView(forward, new LinearLayout.LayoutParams(0, dp(48), 1)); sleep = icon("timer", "Temporizador para dormir"); sleep.setOnClickListener(v -> sleepMenu()); controls.addView(sleep, new LinearLayout.LayoutParams(dp(48), dp(48))); player.addView(controls); root.addView(player);
         populatePrograms(); render();
         if (!podcasts.isEmpty()) connectPlayer();
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 1);
-        load();
+        if (repository.prefs.getBoolean("autoRefresh", true)) load();
+        if (Intent.ACTION_SEND.equals(getIntent().getAction())) {
+            String text = getIntent().getStringExtra(Intent.EXTRA_TEXT);
+            if (text != null) {
+                java.util.regex.Matcher match = java.util.regex.Pattern.compile("https://[^\\s<>]+", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(text);
+                if (match.find()) addRss(match.group());
+            }
+        }
     }
+    @Override protected void onResume() { super.onResume(); if (list != null) { updateProgramHeader(); render(); } }
     @Override protected void onStart() { super.onStart(); handler.post(tick); }
     @Override protected void onStop() { handler.removeCallbacks(tick); super.onStop(); }
-    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); worker.shutdownNow(); if (controllerFuture != null) MediaController.releaseFuture(controllerFuture); super.onDestroy(); }
+    @Override protected void onDestroy() { handler.removeCallbacksAndMessages(null); worker.shutdownNow(); images.shutdownNow(); if (controllerFuture != null) MediaController.releaseFuture(controllerFuture); super.onDestroy(); }
     private void connectPlayer() {
         if (controllerFuture != null) return;
         controllerFuture = new MediaController.Builder(this, new SessionToken(this, new ComponentName(this, PlaybackService.class))).buildAsync();
@@ -142,6 +157,7 @@ public final class MainActivity extends Activity {
     private void updateProgramHeader() {
         Podcast p = currentPodcast(); programTitle.setText(p.title); programDescription.setText(p.feed.isEmpty() ? "Añade tu primer podcast con +" : "Podcast de tu biblioteca");
         remove.setVisibility(p.feed.isEmpty() ? View.GONE : View.VISIBLE);
+        bindArtwork(coverImage, p.artwork);
         cover.setText(p.feed.isEmpty() ? "+" : p.title.length() < 2 ? p.title : p.title.substring(0, 2).toUpperCase(Locale.ROOT));
     }
     private void switchPodcast(Podcast podcast) {
@@ -149,11 +165,11 @@ public final class MainActivity extends Activity {
         repository = new Repository(this, podcast.feed); repository.prefs.edit().putString("selectedFeed", podcast.feed).apply();
         episodes = repository.cached(); displayLimit = 40; updateProgramHeader(); render();
         if (!podcast.feed.isEmpty()) connectPlayer();
-        load();
+        if (repository.prefs.getBoolean("autoRefresh", true)) load();
     }
     private void addMenu() {
         new AlertDialog.Builder(this).setTitle("Añadir a tu biblioteca")
-            .setItems(new String[]{"Buscar podcast por nombre", "Añadir podcast por enlace RSS", "Importar biblioteca OPML"}, (dialog, which) -> {
+            .setItems(new String[]{"Buscar en Apple Podcasts", "Añadir por RSS o enlace de Apple", "Importar biblioteca OPML"}, (dialog, which) -> {
                 if (which == 0) searchPodcasts();
                 else if (which == 1) addRss();
                 else { Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE); startActivityForResult(i, 42); }
@@ -177,7 +193,7 @@ public final class MainActivity extends Activity {
                         if (isDestroyed() || !dialog.isShowing()) return; find.setEnabled(true);
                         message.setText(found.isEmpty() ? "No hay resultados con RSS público HTTPS. Puedes añadirlo por enlace." : "Toca un programa para añadirlo a tu biblioteca.");
                         for (Podcast p : found) {
-                            LinearLayout card = column(8); TextView title = label(p.title, 16, INK, true); card.addView(title);
+                            LinearLayout card = column(8); LinearLayout heading = row(); FrameLayout picture = podcastPicture(p); heading.addView(picture, new LinearLayout.LayoutParams(dp(48), dp(48))); TextView title = label(p.title, 16, INK, true); title.setPadding(dp(12), 0, 0, 0); heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1)); card.addView(heading);
                             TextView source = label(android.net.Uri.parse(p.feed).getHost(), 12, MUTED, false); card.addView(source);
                             card.setBackground(bg(0xff111318, 12)); card.setPadding(dp(12), dp(12), dp(12), dp(12)); card.setContentDescription("Añadir " + p.title);
                             card.setOnClickListener(w -> {
@@ -210,26 +226,33 @@ public final class MainActivity extends Activity {
         }).show();
     }
     private void addRss() {
-        EditText input = new EditText(this); input.setHint("https://… / enlace RSS"); input.setSingleLine(true);
+        addRss("");
+    }
+    private void addRss(String initialLink) {
+        EditText input = new EditText(this); input.setHint("Enlace RSS o de Apple Podcasts"); input.setSingleLine(true);
+        input.setText(initialLink);
         input.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_URI);
-        LinearLayout box = column(20); box.addView(label("Pega el enlace RSS público del podcast.", 14, MUTED, false)); box.addView(input);
+        LinearLayout box = column(20); box.addView(label("Pega el RSS público o el enlace de un programa de Apple Podcasts.", 14, MUTED, false)); box.addView(input);
         AlertDialog dialog = new AlertDialog.Builder(this).setTitle("Añadir podcast").setView(box).setNegativeButton("Cancelar", null).setPositiveButton("Añadir", null).create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            final String link = input.getText().toString().trim();
+            final boolean apple = link.toLowerCase(Locale.ROOT).startsWith("https://podcasts.apple.com/");
             final String feed;
-            try { feed = Repository.normalizeFeed(input.getText().toString()); }
+            try { if (apple) { Catalog.appleId(link); feed = ""; } else feed = Repository.normalizeFeed(link); }
             catch (Exception e) { input.setError(e.getMessage()); return; }
             for (Podcast p : repository.podcasts()) if (p.feed.equals(feed)) { Toast.makeText(this, "Este podcast ya está en tu biblioteca", Toast.LENGTH_SHORT).show(); dialog.dismiss(); return; }
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false); input.setEnabled(false); status.setText("Comprobando el podcast…");
             worker.execute(() -> {
                 try {
-                    Repository added = new Repository(this, feed); Repository.FeedResult result = added.refreshFeed();
+                    Podcast linked = apple ? Catalog.fromAppleLink(link) : new Podcast("Podcast", feed);
+                    Repository added = new Repository(this, linked.feed); Repository.FeedResult result = added.refreshFeed();
                     runOnUiThread(() -> {
                         if (isDestroyed() || !dialog.isShowing()) return;
-                        try { Podcast p = new Podcast(result.title, feed); repository.addPodcast(p); dialog.dismiss(); populatePrograms(); switchPodcast(p); populatePrograms(); }
+                        try { Podcast p = new Podcast(result.title, linked.feed, result.artwork.isEmpty() ? linked.artwork : result.artwork); repository.addPodcast(p); dialog.dismiss(); populatePrograms(); switchPodcast(p); populatePrograms(); }
                         catch (Exception e) { input.setError("No se pudo guardar el podcast"); input.setEnabled(true); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true); }
                     });
                 } catch (Exception e) {
-                    runOnUiThread(() -> { if (isDestroyed() || !dialog.isShowing()) return; input.setEnabled(true); input.setError("No se pudo leer el RSS. Comprueba el enlace y la conexión."); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true); status.setText("No se añadió el podcast"); });
+                    runOnUiThread(() -> { if (isDestroyed() || !dialog.isShowing()) return; input.setEnabled(true); input.setError("No se pudo añadir. Comprueba el enlace, la conexión y que el podcast tenga un RSS público HTTPS."); dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true); status.setText("No se añadió el podcast"); });
                 }
             });
         })); dialog.show();
@@ -257,7 +280,7 @@ public final class MainActivity extends Activity {
         if (loading) return; loading = true; final int generation = ++requestGeneration; final Repository target = repository;
         refresh.setEnabled(false); status.setText("Buscando nuevos episodios…");
         worker.execute(() -> {
-            try { List<Episode> result = target.refresh(); runOnUiThread(() -> { if (isDestroyed() || generation != requestGeneration) return; episodes = result; loading = false; refresh.setEnabled(true); render(); }); }
+            try { List<Episode> result = target.refresh(); runOnUiThread(() -> { if (isDestroyed() || generation != requestGeneration) return; episodes = result; loading = false; refresh.setEnabled(true); populatePrograms(); render(); }); }
             catch (Exception e) { runOnUiThread(() -> { if (isDestroyed() || generation != requestGeneration) return; loading = false; refresh.setEnabled(true); status.setText(episodes.isEmpty() ? "No se pudo cargar el programa. Comprueba el enlace y la conexión." : "Sin conexión. Mostrando la biblioteca guardada."); }); }
         });
     }
@@ -270,7 +293,8 @@ public final class MainActivity extends Activity {
             ImageButton add = icon("add", "Añadir tu primer podcast"); add.setOnClickListener(v -> addMenu()); list.addView(add, new LinearLayout.LayoutParams(dp(64), dp(64))); return;
         }
         allTab.setAlpha(downloadedOnly ? .45f : 1f); offlineTab.setAlpha(downloadedOnly ? 1f : .45f);
-        for (Episode e : episodes) {
+        List<Episode> ordered = new ArrayList<>(episodes); if (repository.prefs.getBoolean("oldestFirst", false)) Collections.reverse(ordered);
+        for (Episode e : ordered) {
             if (downloadedOnly && repository.downloadStatus(e) < 0) continue;
             count++;
             if (count > displayLimit) continue;
@@ -305,9 +329,9 @@ public final class MainActivity extends Activity {
         if (controller == null) { Toast.makeText(this, "Conectando al reproductor…", Toast.LENGTH_SHORT).show(); return; }
         MediaItem existing = controller.getCurrentMediaItem();
         if (existing == null || !existing.mediaId.equals(e.id) || repository.localUri(e) != null) {
-            long startPosition = existing != null && existing.mediaId.equals(e.id) ? controller.getCurrentPosition() : repository.position(e.id);
+            long startPosition = existing != null && existing.mediaId.equals(e.id) ? controller.getCurrentPosition() : repository.prefs.getBoolean("resumePlayback", true) ? repository.position(e.id) : 0;
             if (controller.getPlaybackState() == Player.STATE_ENDED && existing != null && existing.mediaId.equals(e.id)) startPosition = 0;
-            MediaMetadata meta = new MediaMetadata.Builder().setTitle(e.title).setArtist(currentPodcast().title).setAlbumTitle(currentPodcast().title).build();
+            MediaMetadata meta = new MediaMetadata.Builder().setTitle(e.title).setArtist(currentPodcast().title).setAlbumTitle(currentPodcast().title).setArtworkUri(currentPodcast().artwork.isEmpty() ? null : android.net.Uri.parse(currentPodcast().artwork)).build();
             controller.setMediaItem(new MediaItem.Builder().setMediaId(e.id).setUri(repository.playbackUri(e)).setMediaMetadata(meta).build(), startPosition);
         } else if (controller.getPlaybackState() == Player.STATE_ENDED) controller.seekTo(0);
         controller.prepare(); if (start) controller.play(); updatePlayer();
@@ -315,11 +339,33 @@ public final class MainActivity extends Activity {
     private void updatePlayer() {
         boolean has = controller != null && controller.getCurrentMediaItem() != null;
         toggle.setEnabled(has); seek.setEnabled(has);
+        long remaining = repository.prefs.getLong("sleepDeadline", 0) - SystemClock.elapsedRealtime(); sleep.setAlpha(remaining > 0 ? 1f : .5f); sleep.setContentDescription(remaining > 0 ? "Temporizador: " + (remaining + 59999) / 60000 + " minutos restantes" : "Temporizador para dormir");
         if (!has) return;
         current.setText(controller.getMediaMetadata().title); long duration = Math.max(0, controller.getDuration()), position = Math.max(0, controller.getCurrentPosition());
         if (!seeking) seek.setProgress(duration > 0 ? (int) (position * 1000 / duration) : 0);
         time.setText(clock(position) + " / " + clock(duration));
         setIcon(toggle, controller.isPlaying() || controller.getPlayWhenReady() ? "pause" : "play", controller.isPlaying() || controller.getPlayWhenReady() ? "Pausar" : "Reproducir");
+    }
+    private void sleepMenu() {
+        long remaining = repository.prefs.getLong("sleepDeadline", 0) - SystemClock.elapsedRealtime();
+        new AlertDialog.Builder(this).setTitle(remaining > 0 ? "Temporizador · " + (remaining + 59999) / 60000 + " min restantes" : "Temporizador para dormir").setItems(new String[]{"Desactivado", "15 minutos", "30 minutos", "45 minutos", "60 minutos"}, (dialog, index) -> {
+            if (index == 0) repository.prefs.edit().remove("sleepDeadline").apply();
+            else repository.prefs.edit().putLong("sleepDeadline", SystemClock.elapsedRealtime() + index * 15 * 60000L).apply();
+            Toast.makeText(this, index == 0 ? "Temporizador desactivado" : "Se pausará en " + index * 15 + " minutos", Toast.LENGTH_SHORT).show(); updatePlayer();
+        }).setNegativeButton("Cerrar", null).show();
+    }
+    private FrameLayout podcastPicture(Podcast podcast) {
+        FrameLayout frame = new FrameLayout(this); frame.setBackground(bg(0xff183e37, 10)); frame.setClipToOutline(true);
+        TextView fallback = label(podcast.title.isEmpty() ? "♫" : podcast.title.substring(0, 1).toUpperCase(Locale.ROOT), 20, INK, true); fallback.setGravity(Gravity.CENTER); frame.addView(fallback, new FrameLayout.LayoutParams(-1, -1));
+        ImageView image = new ImageView(this); image.setScaleType(ImageView.ScaleType.CENTER_CROP); image.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); frame.addView(image, new FrameLayout.LayoutParams(-1, -1)); bindArtwork(image, podcast.artwork); return frame;
+    }
+    private void bindArtwork(ImageView image, String url) {
+        if (url.equals(image.getTag())) return;
+        image.setTag(url); image.setImageDrawable(null); if (url.isEmpty()) return;
+        images.execute(() -> {
+            try { android.graphics.Bitmap bitmap = artworkStore.load(url); runOnUiThread(() -> { if (!isDestroyed() && url.equals(image.getTag())) { image.setImageBitmap(bitmap); if (bitmap == null) image.setTag(null); } }); }
+            catch (Exception ignored) { runOnUiThread(() -> { if (!isDestroyed() && url.equals(image.getTag())) image.setTag(null); }); }
+        });
     }
     private String clock(long ms) { return String.format(Locale.ROOT, "%02d:%02d", ms / 60000, (ms / 1000) % 60); }
     private String prettyDate(String raw) {
