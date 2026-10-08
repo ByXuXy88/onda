@@ -1,0 +1,37 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'es.jesus.ampodcasts'
+    compileSdk 35
+    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 3; versionName '1.2' }
+    def signingPath = System.getenv('ONDA_KEYSTORE_PATH')
+    if (signingPath) {
+        signingConfigs {
+            distribution {
+                storeFile file(signingPath)
+                storePassword System.getenv('ONDA_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ONDA_KEY_ALIAS')
+                keyPassword System.getenv('ONDA_KEY_PASSWORD')
+            }
+        }
+        buildTypes {
+            debug { signingConfig signingConfigs.distribution }
+            release { signingConfig signingConfigs.distribution }
+        }
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    testOptions {
+        unitTests.includeAndroidResources = true
+        unitTests.all {
+            systemProperty 'robolectric.dependency.repo.url', 'https://repo.maven.apache.org/maven2'
+            ['http.proxyHost', 'http.proxyPort', 'https.proxyHost', 'https.proxyPort'].each { key ->
+                if (System.getProperty(key) != null) systemProperty key, System.getProperty(key)
+            }
+        }
+    }
+}
+dependencies {
+    implementation 'androidx.media3:media3-exoplayer:1.6.1'
+    implementation 'androidx.media3:media3-session:1.6.1'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.robolectric:robolectric:4.14.1'
+}
