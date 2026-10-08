@@ -9,13 +9,13 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.4" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.5" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.4"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.5"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.4) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.5) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
@@ -28,9 +28,11 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | <img src="docs/images/biblioteca.png" alt="Biblioteca vacía de Onda en negro OLED, con controles por iconos" width="240" /> | <img src="docs/images/anadir.png" alt="Menú para buscar podcasts, añadir RSS o importar OPML" width="240" /> | <img src="docs/images/rss.png" alt="Formulario para añadir un podcast mediante RSS o enlace de Apple" width="240" /> |
 | Un espacio para tus programas. | Búsqueda, RSS y bibliotecas OPML. | Pega un RSS o un enlace de Apple. |
 
-<p align="center"><img src="docs/images/ajustes.png" alt="Ajustes de Onda: velocidad, silencios, Wi-Fi y biblioteca" width="280" /></p>
+| Episodios y vídeo | Organiza tu escucha | Ajustes y calidad |
+| :---: | :---: | :---: |
+| <img src="docs/images/episodios.png" alt="Episodios con progreso, favoritos y vídeo" width="240" /> | <img src="docs/images/secciones.png" alt="Continuar escuchando, favoritos y cola" width="240" /> | <img src="docs/images/ajustes.png" alt="Calidad original de audio y ajustes" width="240" /> |
 
-<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.4 con una biblioteca vacía. La apariencia de los diálogos puede variar según la versión de Android.</sub>
+<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.5 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
 
 ## Qué puedes hacer
 
@@ -46,6 +48,13 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | 🖼️ | **Reconoce tus programas** | Portadas del catálogo y del RSS con caché local para verlas sin conexión. |
 | ⏱️ | **Temporizador para dormir** | Pausa la reproducción tras 15, 30, 45 o 60 minutos, también en segundo plano. |
 | 📤 | **Comparte con Onda** | Recibe un enlace desde otra app y confirma el programa que quieres añadir. |
+| 🔊 | **Calidad original** | Reproduce y descarga sin recomprimir. Si el RSS ofrece variantes con calidad indicada, elige la mejor. |
+| 🎬 | **Vídeo del podcast** | Abre el reproductor de vídeo cuando el RSS publica un archivo de vídeo compatible. |
+| 🗂️ | **Escuchar después** | Cola persistente de hasta 200 episodios, con orden editable y reproducción seguida. |
+| ❤️ | **Favoritos y progreso** | Guarda capítulos y encuentra los empezados en Continuar escuchando. |
+| ✅ | **Escuchados** | Marca episodios manualmente o al terminarlos y ocúltalos desde Ajustes. |
+| 🔍 | **Búsqueda en tu biblioteca** | Encuentra por título los episodios guardados de todos tus programas. |
+| 🧹 | **Control del espacio** | Consulta los MB de descargas y elimina archivos individuales o escuchados. |
 
 ## Por qué existe Onda
 
@@ -57,11 +66,13 @@ Cada persona decide qué programas añadir. **Una instalación nueva no incluye 
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.4](https://github.com/ByXuXy88/onda/releases/tag/v1.4) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+1. Abre la [versión 1.5](https://github.com/ByXuXy88/onda/releases/tag/v1.5) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
 2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o un enlace de Apple, o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
-Toca el engranaje para abrir **Ajustes**. Puedes limitar las nuevas descargas a Wi-Fi y exportar la biblioteca OPML. Las descargas no usan itinerancia. El temporizador está junto a los controles del reproductor.
+Toca el engranaje para abrir **Ajustes**. Puedes limitar las nuevas descargas a Wi-Fi y exportar la biblioteca OPML. Las descargas no usan itinerancia. El temporizador está junto a los controles del reproductor. El icono de biblioteca abre **Continuar escuchando**, **Favoritos** y **Escuchar después**; la lupa busca episodios guardados. Usa los tres puntos de cada episodio para marcarlo como escuchado, añadirlo a la cola o cambiar su orden.
+
+Si aparece la cámara, el episodio dispone de vídeo. Al cerrar su pantalla, la reproducción sigue en segundo plano. Cuando hay audio y vídeo separados, el botón de descarga guarda el audio; en podcasts solo de vídeo guarda ese archivo de vídeo.
 
 Las portadas de programas añadidos en versiones anteriores se recuperan al actualizar sus episodios. Si desactivas la actualización automática, usa el botón de actualizar.
 
@@ -107,9 +118,13 @@ Una instalación limpia empieza vacía y no consulta fuentes RSS al arrancar. Un
 
 ### Límites actuales
 
+La calidad depende del original del editor y de los decodificadores del dispositivo: no se convierte un MP3 en audio sin pérdidas ni se aumenta artificialmente su calidad. Las variantes RSS se seleccionan por el bitrate indicado o, para vídeo sin bitrate, por su altura; sin esos datos se conserva la primera variante válida. El soporte de vídeo se dirige a archivos RSS como MP4 y WebM con formatos compatibles. No importa vídeos desde páginas de YouTube ni incluye módulos para emisiones HLS/DASH o contenido protegido.
+
+La cola guarda episodios pendientes, no inicia la escucha sola al abrir la app y continúa al terminar el episodio actual. Favoritos, cola y estado de escuchado son locales y todavía no se incluyen en la exportación OPML. La búsqueda utiliza los episodios ya guardados; actualiza un programa si quieres incluir sus capítulos nuevos.
+
 La búsqueda depende del catálogo público de Apple y filtra programas sin RSS HTTPS disponible. No sincroniza cuentas de Apple Podcasts, compras ni historial de otros servicios. La importación OPML guarda la lista de programas; los episodios se cargan al seleccionarlos. La biblioteca y el progreso son locales. La exportación OPML solo incluye los programas y sus RSS, sin audio ni posiciones de reproducción.
 
-El funcionamiento con pantalla apagada y las descargas debe verificarse también en dispositivos reales. Las pruebas automatizadas cubren el estado inicial vacío, la biblioteca, la importación, la búsqueda, el progreso, las portadas, los ajustes, el temporizador en el servicio y la compatibilidad con datos anteriores.
+El vídeo, la reproducción seguida, el funcionamiento con pantalla apagada y las descargas deben verificarse también en dispositivos reales. Las pruebas automatizadas cubren el estado inicial vacío, la biblioteca, la importación, la búsqueda, el progreso, las portadas, los ajustes, el temporizador en el servicio, las variantes de audio/vídeo, la cola, los favoritos y la compatibilidad con datos anteriores.
 
 
 </details>
