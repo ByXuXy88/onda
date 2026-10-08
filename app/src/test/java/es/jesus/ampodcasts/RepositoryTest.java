@@ -13,6 +13,37 @@ import org.robolectric.annotation.Config;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 28)
 public class RepositoryTest {
+    @Test public void oldLibraryEntriesMigrateWithoutLosingFeedAndArtworkIsSaved() throws Exception {
+        Podcast old = Podcast.from(new org.json.JSONObject("{\"title\":\"Mi podcast\",\"feed\":\"https://example.com/rss\"}"));
+        assertEquals("", old.artwork);
+        Repository r = new Repository(RuntimeEnvironment.getApplication()); r.addPodcast(old);
+        r.updateArtwork(old.feed, "https://example.com/cover.jpg");
+        Podcast restored = new Repository(RuntimeEnvironment.getApplication()).podcasts().get(0);
+        assertEquals(old.feed, restored.feed); assertEquals(old.title, restored.title); assertEquals("https://example.com/cover.jpg", restored.artwork);
+    }
+    @Test public void podcastArtworkPrefersChannelItunesImageOverRssAndEpisodeImages() throws Exception {
+        String xml = "<rss xmlns:itunes='http://www.itunes.com/dtds/podcast-1.0.dtd'><channel><image><title>Image title</title><url>https://example.com/rss.png</url></image><title>Programa</title><itunes:image href='https://example.com/show.png'/><item><title>Uno</title><itunes:image href='https://example.com/episode.png'/><enclosure url='https://example.com/one.mp3'/></item></channel></rss>";
+        Repository.FeedResult result = Repository.parseFeed(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+        assertEquals("Programa", result.title); assertEquals("https://example.com/show.png", result.artwork);
+    }
+    @Test public void rssArtworkFallbackAndInsecureImagesAreHandled() throws Exception {
+        String xml = "<rss><channel><title>Programa</title><image><url>https://example.com/rss.png</url></image><item><title>Uno</title><enclosure url='https://example.com/one.mp3'/></item></channel></rss>";
+        assertEquals("https://example.com/rss.png", Repository.parseFeed(new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8))).artwork);
+        assertEquals("", new Podcast("Uno", "https://example.com/rss", "http://example.com/cover.png").artwork);
+    }
+    @Test public void appleLinksExtractOnlyShowIdsAndCatalogPreservesArtwork() throws Exception {
+        assertEquals("123456", Catalog.appleId("https://podcasts.apple.com/es/podcast/mi-programa/id123456?i=998877"));
+        assertThrows(Exception.class, () -> Catalog.appleId("https://podcasts.apple.com.evil.example/id123456"));
+        List<Podcast> podcasts = Catalog.parse("{\"results\":[{\"collectionName\":\"Uno\",\"feedUrl\":\"https://example.com/rss\",\"artworkUrl600\":\"https://example.com/cover.jpg\"}]}");
+        assertEquals("https://example.com/cover.jpg", podcasts.get(0).artwork);
+    }
+    @Test public void exportedLibraryRoundTripsEscapedNamesWithoutIncludingProgress() throws Exception {
+        Repository r = new Repository(RuntimeEnvironment.getApplication()); r.addPodcast(new Podcast("Noticias & Ciencia <Hoy>", "https://example.com/rss?a=1&b=2")); r.savePosition("episode", 15000);
+        ByteArrayOutputStream out = new ByteArrayOutputStream(); r.exportOpml(out);
+        List<Podcast> restored = Repository.parseOpml(new ByteArrayInputStream(out.toByteArray()));
+        assertEquals("Noticias & Ciencia <Hoy>", restored.get(0).title); assertEquals("https://example.com/rss?a=1&b=2", restored.get(0).feed);
+        assertFalse(out.toString("UTF-8").contains("15000"));
+    }
     @Test public void freshInstallHasNoPodcastsOrEpisodes() {
         Repository r = new Repository(RuntimeEnvironment.getApplication());
         assertTrue(r.podcasts().isEmpty()); assertTrue(r.cached().isEmpty());
