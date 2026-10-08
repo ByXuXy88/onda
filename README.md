@@ -9,13 +9,13 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.3" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.4" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.3"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.4"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.3) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.4) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
@@ -23,23 +23,29 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 ## Así se ve Onda
 
-| Tu biblioteca | Añade tus podcasts | Usa un enlace RSS |
+| Tu biblioteca | Añade tus podcasts | RSS o Apple Podcasts |
 | :---: | :---: | :---: |
-| <img src="docs/images/biblioteca.png" alt="Biblioteca vacía de Onda en negro OLED, con controles por iconos" width="240" /> | <img src="docs/images/anadir.png" alt="Menú para buscar podcasts, añadir RSS o importar OPML" width="240" /> | <img src="docs/images/rss.png" alt="Formulario para añadir un podcast mediante su enlace RSS" width="240" /> |
-| Un espacio para tus programas. | Búsqueda, RSS y bibliotecas OPML. | Pega el enlace público de tu podcast. |
+| <img src="docs/images/biblioteca.png" alt="Biblioteca vacía de Onda en negro OLED, con controles por iconos" width="240" /> | <img src="docs/images/anadir.png" alt="Menú para buscar podcasts, añadir RSS o importar OPML" width="240" /> | <img src="docs/images/rss.png" alt="Formulario para añadir un podcast mediante RSS o enlace de Apple" width="240" /> |
+| Un espacio para tus programas. | Búsqueda, RSS y bibliotecas OPML. | Pega un RSS o un enlace de Apple. |
 
-<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.3 con una biblioteca vacía. La apariencia de los diálogos puede variar según la versión de Android.</sub>
+<p align="center"><img src="docs/images/ajustes.png" alt="Ajustes de Onda: velocidad, silencios, Wi-Fi y biblioteca" width="280" /></p>
+
+<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.4 con una biblioteca vacía. La apariencia de los diálogos puede variar según la versión de Android.</sub>
 
 ## Qué puedes hacer
 
 | | Función | Para qué sirve |
 | :---: | --- | --- |
 | 🔎 | **Encuentra tus programas** | Busca por nombre en el catálogo público de Apple Podcasts. |
-| 📚 | **Crea tu biblioteca** | Añade enlaces RSS HTTPS o importa hasta 100 programas desde un archivo OPML. |
+| 📚 | **Crea tu biblioteca** | Añade RSS HTTPS o enlaces de Apple; importa hasta 100 programas desde OPML y exporta tu biblioteca. |
 | 🌙 | **Negro OLED** | Interfaz oscura con fondo negro y controles por iconos. |
 | 🎧 | **Escucha en segundo plano** | Reproduce con la pantalla apagada y los controles multimedia de Android. |
 | ⬇️ | **Llévalos contigo** | Descarga episodios para escucharlos sin conexión y conserva el progreso. |
 | ↔️ | **Controla la escucha** | Retrocede 15 segundos, avanza 30 segundos y cambia entre tus programas. |
+| ⚙️ | **Ajusta Onda a tu gusto** | Velocidad de 0,75× a 2×, omitir silencios, reanudar, actualizar al abrir y ordenar episodios. |
+| 🖼️ | **Reconoce tus programas** | Portadas del catálogo y del RSS con caché local para verlas sin conexión. |
+| ⏱️ | **Temporizador para dormir** | Pausa la reproducción tras 15, 30, 45 o 60 minutos, también en segundo plano. |
+| 📤 | **Comparte con Onda** | Recibe un enlace desde otra app y confirma el programa que quieres añadir. |
 
 ## Por qué existe Onda
 
@@ -51,11 +57,15 @@ Cada persona decide qué programas añadir. **Una instalación nueva no incluye 
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.3](https://github.com/ByXuXy88/onda/releases/tag/v1.3) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
-2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o importar una biblioteca OPML.
+1. Abre la [versión 1.4](https://github.com/ByXuXy88/onda/releases/tag/v1.4) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o un enlace de Apple, o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
-Las descargas pueden utilizar datos móviles, pero no itinerancia. Tu biblioteca y el progreso se guardan en el dispositivo.
+Toca el engranaje para abrir **Ajustes**. Puedes limitar las nuevas descargas a Wi-Fi y exportar la biblioteca OPML. Las descargas no usan itinerancia. El temporizador está junto a los controles del reproductor.
+
+Las portadas de programas añadidos en versiones anteriores se recuperan al actualizar sus episodios. Si desactivas la actualización automática, usa el botón de actualizar.
+
+Desde Ajustes puedes abrir la web de Apple Podcasts para consultar allí tu cuenta. **Iniciar sesión en la web de Apple no importa ni sincroniza su biblioteca con Onda.**
 
 ## Para desarrolladores
 
@@ -97,9 +107,9 @@ Una instalación limpia empieza vacía y no consulta fuentes RSS al arrancar. Un
 
 ### Límites actuales
 
-La búsqueda depende del catálogo público de Apple y filtra programas sin RSS HTTPS disponible. No sincroniza cuentas de Apple Podcasts, compras ni historial de otros servicios. La importación OPML guarda la lista de programas; los episodios se cargan al seleccionarlos. La biblioteca y el progreso son locales.
+La búsqueda depende del catálogo público de Apple y filtra programas sin RSS HTTPS disponible. No sincroniza cuentas de Apple Podcasts, compras ni historial de otros servicios. La importación OPML guarda la lista de programas; los episodios se cargan al seleccionarlos. La biblioteca y el progreso son locales. La exportación OPML solo incluye los programas y sus RSS, sin audio ni posiciones de reproducción.
 
-El funcionamiento con pantalla apagada y las descargas debe verificarse también en dispositivos reales. Las pruebas automatizadas cubren el estado inicial vacío, la biblioteca, la importación, la búsqueda, el progreso y la compatibilidad con datos anteriores.
+El funcionamiento con pantalla apagada y las descargas debe verificarse también en dispositivos reales. Las pruebas automatizadas cubren el estado inicial vacío, la biblioteca, la importación, la búsqueda, el progreso, las portadas, los ajustes, el temporizador en el servicio y la compatibilidad con datos anteriores.
 
 
 </details>
