@@ -332,10 +332,10 @@ public final class MainActivity extends Activity {
     private TextView label(String text, int size, int color, boolean bold) { TextView t = new TextView(this); t.setText(text); t.setTextSize(size); t.setTextColor(color); if (bold) t.setTypeface(null, Typeface.BOLD); return t; }
     private ImageButton icon(String type, String description) {
         ImageButton b = new ImageButton(this); b.setBackground(bg(0xff111318, 24)); b.setPadding(dp(12), dp(12), dp(12), dp(12));
-        b.setScaleType(ImageView.ScaleType.FIT_CENTER); setIcon(b, type, description); return b;
+        b.setScaleType(ImageView.ScaleType.CENTER_INSIDE); setIcon(b, type, description); return b;
     }
     private void setIcon(ImageButton button, String type, String description) {
-        if (!type.equals(button.getTag())) { button.setImageDrawable(new ControlIcon(type, PURPLE)); button.setTag(type); }
+        if (!type.equals(button.getTag())) { button.setImageDrawable(new ControlIcon(type, PURPLE, dp(24))); button.setTag(type); }
         button.setContentDescription(description); button.setTooltipText(description);
     }
     private GradientDrawable bg(int color, int radius) { GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(radius)); return d; }
