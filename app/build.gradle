@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'es.jesus.ampodcasts'
     compileSdk 35
-    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 5; versionName '1.4' }
+    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 6; versionName '1.5' }
     def signingPath = System.getenv('ONDA_KEYSTORE_PATH')
     if (signingPath) {
         signingConfigs {
@@ -33,6 +33,7 @@ android {
 dependencies {
     implementation 'androidx.media3:media3-exoplayer:1.6.1'
     implementation 'androidx.media3:media3-session:1.6.1'
+    implementation 'androidx.media3:media3-ui:1.6.1'
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.robolectric:robolectric:4.14.1'
 }
