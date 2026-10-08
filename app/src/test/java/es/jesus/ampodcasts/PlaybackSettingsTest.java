@@ -14,6 +14,17 @@ import java.time.Duration;
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 28)
 public class PlaybackSettingsTest {
+    @Test public void playlistConsumesPendingEpisodesInServiceWithoutMarkingManualSkipsListened() throws Exception {
+        Repository repository = new Repository(RuntimeEnvironment.getApplication()); Podcast podcast = new Podcast("Uno", "https://example.com/rss"); repository.addPodcast(podcast);
+        LibraryEntry a = new LibraryEntry(new Episode("a", "Primero", "", "https://example.com/a.mp3"), podcast), b = new LibraryEntry(new Episode("b", "Segundo", "", "https://example.com/b.mp3"), podcast); repository.enqueue(a); repository.enqueue(b);
+        ServiceController<PlaybackService> controller = Robolectric.buildService(PlaybackService.class).create();
+        try {
+            java.lang.reflect.Field field = PlaybackService.class.getDeclaredField("player"); field.setAccessible(true); ExoPlayer player = (ExoPlayer) field.get(controller.get());
+            player.setMediaItems(java.util.Arrays.asList(a.mediaItem(controller.get(), false), b.mediaItem(controller.get(), false)));
+            assertEquals(1, repository.queue().size()); assertEquals("b", repository.queue().get(0).episode.id);
+            player.seekToNextMediaItem(); assertEquals("b", player.getCurrentMediaItem().mediaId); assertTrue(repository.queue().isEmpty()); assertFalse(repository.listened("a"));
+        } finally { controller.destroy(); }
+    }
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     @Test public void backgroundPlayerAppliesSettingsAndPausesWhenTimerExpires() throws Exception {
         Repository r = new Repository(RuntimeEnvironment.getApplication()); r.prefs.edit().putFloat("speed", 1.5f).putBoolean("skipSilence", true).commit();
