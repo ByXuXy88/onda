@@ -105,6 +105,7 @@ public final class PlaybackService extends MediaSessionService {
                 .setSessionCommand(new SessionCommand(forward ? JUMP_FORWARD : JUMP_BACK, android.os.Bundle.EMPTY))
                 .setSlots(forward ? CommandButton.SLOT_FORWARD : CommandButton.SLOT_BACK).build();
     }
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     SessionResult notificationJump(String action) {
         if (!JUMP_BACK.equals(action) && !JUMP_FORWARD.equals(action)) return new SessionResult(SessionError.ERROR_NOT_SUPPORTED);
         if (player == null || player.getCurrentMediaItem() == null || !player.isCurrentMediaItemSeekable()) return new SessionResult(SessionError.ERROR_INVALID_STATE);
