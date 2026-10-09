@@ -14,6 +14,7 @@ final class ControlIcon extends Drawable {
         c.save(); c.translate(b.exactCenterX() - 12 * scale, b.exactCenterY() - 12 * scale); c.scale(scale, scale);
         paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(1.8f);
         switch (type) {
+            case "wave": for (int x = 5; x <= 20; x += 5) { float h = x == 10 ? 8 : x == 15 ? 5 : 3; c.drawLine(x,12-h,x,12+h,paint); } break;
             case "video": c.drawRoundRect(3, 6, 16, 18, 2, 2, paint); { Path p = new Path(); p.moveTo(16, 10); p.lineTo(21, 7); p.lineTo(21, 17); p.lineTo(16, 14); c.drawPath(p, paint); } break;
             case "library": c.drawRoundRect(3, 4, 7, 20, 1, 1, paint); c.drawRoundRect(10, 4, 14, 20, 1, 1, paint); c.drawLine(17, 5, 21, 19, paint); break;
             case "more": paint.setStyle(Paint.Style.FILL); for (int y = 5; y <= 19; y += 7) c.drawCircle(12, y, 1.5f, paint); break;
@@ -25,7 +26,7 @@ final class ControlIcon extends Drawable {
             case "back": c.drawLine(19, 12, 5, 12, paint); c.drawLine(5, 12, 11, 6, paint); c.drawLine(5, 12, 11, 18, paint); break;
             case "timer": c.drawCircle(12, 13, 8, paint); c.drawLine(9, 2, 15, 2, paint); c.drawLine(12, 5, 12, 2, paint); c.drawLine(12, 8, 12, 13, paint); c.drawLine(12, 13, 15, 15, paint); break;
             case "search": c.drawCircle(10, 10, 6, paint); c.drawLine(15, 15, 21, 21, paint); break;
-            case "play": { paint.setStyle(Paint.Style.FILL); Path p = new Path(); p.moveTo(8, 5); p.lineTo(19, 12); p.lineTo(8, 19); p.close(); c.drawPath(p, paint); break; }
+            case "play": { paint.setStyle(Paint.Style.FILL); Path p = new Path(); p.moveTo(8, 5.5f); p.quadTo(8,4,9.5f,5); p.lineTo(18.5f,10.5f); p.quadTo(21,12,18.5f,13.5f); p.lineTo(9.5f,19); p.quadTo(8,20,8,18.5f); p.close(); c.drawPath(p, paint); break; }
             case "pause": paint.setStyle(Paint.Style.FILL); c.drawRoundRect(7, 5, 10, 19, .75f, .75f, paint); c.drawRoundRect(14, 5, 17, 19, .75f, .75f, paint); break;
             case "add": c.drawLine(12, 5, 12, 19, paint); c.drawLine(5, 12, 19, 12, paint); break;
             case "close": c.drawLine(6, 6, 18, 18, paint); c.drawLine(18, 6, 6, 18, paint); break;
