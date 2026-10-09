@@ -9,13 +9,13 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.6 · Desarrollo" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.6" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.5"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.6"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.5) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.6) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
@@ -78,13 +78,13 @@ Cada persona decide qué programas añadir. **Una instalación nueva no incluye 
 
 ## Estado de la versión 1.6
 
-Las funciones descritas están implementadas y disponibles en [**Onda 1.6 · Vista previa**](https://github.com/ByXuXy88/onda/releases/tag/v1.6-preview). Esta edición usa el paquete `es.jesus.ampodcasts.preview` y se instala junto a Onda 1.5, sin borrar ni modificar su biblioteca. Empieza vacía; puedes exportar el OPML de 1.5 e importarlo en la vista previa para copiar tus programas. El OPML no transfiere favoritos ni progreso.
+Las mejoras están disponibles en [**Onda 1.6**](https://github.com/ByXuXy88/onda/releases/tag/v1.6). Descarga `Onda.apk` e instala sobre Onda 1.5 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
 
-La descarga estable sigue siendo **1.5**. La publicación de un APK 1.6 que actualice directamente esa instalación está pendiente de recuperar la clave original de firma. No desinstales Onda 1.5 para probar la vista previa.
+La vista previa permanece disponible como instalación independiente. La reproducción y el vídeo en ventana flotante aún deben comprobarse en un dispositivo físico.
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.5](https://github.com/ByXuXy88/onda/releases/tag/v1.5) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+1. Abre la [versión 1.6](https://github.com/ByXuXy88/onda/releases/tag/v1.6) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
 2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o un enlace de Apple, o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
@@ -134,7 +134,7 @@ Para publicar actualizaciones, usa una clave privada estable que controles y man
 - `ONDA_KEY_ALIAS`: alias de la clave.
 - `ONDA_KEY_PASSWORD`: contraseña de la clave.
 
-Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. La clave original no está en este repositorio y debe recuperarse antes de distribuir 1.6 como actualización compatible.
+Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. Onda 1.6 mantiene esa misma firma original. La clave se conserva fuera del repositorio público.
 
 ### Biblioteca vacía y actualización
 
