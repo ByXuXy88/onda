@@ -9,13 +9,13 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.6" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.7" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.6"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.7"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.6) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.7) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
@@ -76,15 +76,17 @@ El proyecto parte de esa idea y busca evolucionar hacia una aplicación independ
 
 Cada persona decide qué programas añadir. **Una instalación nueva no incluye ningún podcast ni ningún audio.** Onda es independiente: no es una aplicación oficial de Apple ni sincroniza tu cuenta de Apple Podcasts.
 
-## Estado de la versión 1.6
+## Estado de la versión 1.7
 
-Las mejoras están disponibles en [**Onda 1.6**](https://github.com/ByXuXy88/onda/releases/tag/v1.6). Descarga `Onda.apk` e instala sobre Onda 1.5 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
+El reproductor muestra la portada y el nombre del programa, un botón principal más grande y controles de salto redondeados con respuesta visual al pulsar. La velocidad, los capítulos y el temporizador están agrupados encima de los controles.
+
+Las mejoras están disponibles en [**Onda 1.7**](https://github.com/ByXuXy88/onda/releases/tag/v1.7). Descarga `Onda.apk` e instala sobre Onda 1.5 o 1.6 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
 
 La vista previa permanece disponible como instalación independiente. La reproducción y el vídeo en ventana flotante aún deben comprobarse en un dispositivo físico.
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.6](https://github.com/ByXuXy88/onda/releases/tag/v1.6) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+1. Abre la [versión 1.7](https://github.com/ByXuXy88/onda/releases/tag/v1.7) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
 2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o un enlace de Apple, o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
@@ -134,7 +136,7 @@ Para publicar actualizaciones, usa una clave privada estable que controles y man
 - `ONDA_KEY_ALIAS`: alias de la clave.
 - `ONDA_KEY_PASSWORD`: contraseña de la clave.
 
-Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. Onda 1.6 mantiene esa misma firma original. La clave se conserva fuera del repositorio público.
+Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. Onda 1.6 y 1.7 mantienen esa misma firma original. La clave se conserva fuera del repositorio público.
 
 ### Biblioteca vacía y actualización
 
@@ -158,3 +160,7 @@ El vídeo, la reproducción seguida, el funcionamiento con pantalla apagada y la
 [Privacidad](PRIVACY.md) · [Licencia MIT](LICENSE) · [Cómo contribuir](CONTRIBUTING.md) · [Bibliotecas utilizadas](THIRD_PARTY_NOTICES.md)
 
 Los podcasts y sus derechos pertenecen a sus respectivos editores. Onda no es una aplicación oficial de Apple o Google.
+
+## Inspiración y créditos
+
+Algunos elementos visuales de los controles de reproducción de Onda están inspirados en [Phonograph Plus](https://github.com/chr56/Phonograph_Plus), especialmente su estilo Material. El resto del diseño y las funciones de Onda se han desarrollado de forma independiente. Gracias a chr56 y a quienes contribuyen al proyecto. Esta adaptación utiliza controles propios y no incorpora código ni recursos de Phonograph Plus.
