@@ -118,14 +118,14 @@ final class Repository {
     FeedResult refreshFeed() throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(normalizeFeed(feed)).openConnection();
         conn.setConnectTimeout(15000); conn.setReadTimeout(25000);
-        conn.setRequestProperty("User-Agent", "Onda/1.5 Android");
+        conn.setRequestProperty("User-Agent", "Onda/1.6 Android");
         FeedResult result;
         try {
             if (conn.getResponseCode() != 200) throw new IOException("La fuente no responde (" + conn.getResponseCode() + ")");
             try (InputStream in = conn.getInputStream()) { result = parseFeed(in); }
         } finally { conn.disconnect(); }
         List<Episode> list = new ArrayList<>();
-        for (Episode e : result.episodes) list.add(new Episode(episodeId(e.id), e.title, e.date, e.url, e.videoUrl));
+        for (Episode e : result.episodes) list.add(new Episode(episodeId(e.id), e.title, e.date, e.url, e.videoUrl, e.durationMs, e.chaptersUrl, e.artwork));
         if (list.isEmpty()) throw new IOException("La fuente no contiene episodios reproducibles");
         JSONArray a = new JSONArray(); for (Episode e : list) a.put(e.json());
         AtomicFile f = new AtomicFile(cacheFile());
@@ -145,12 +145,12 @@ final class Repository {
     static FeedResult parseFeed(InputStream in) throws Exception {
         XmlPullParser p = Xml.newPullParser(); p.setInput(in, null);
         List<Episode> result = new ArrayList<>();
-        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1;
+        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1, duration = 0; String chapters = "", episodeArtwork = "";
         for (int event = p.getEventType(); event != XmlPullParser.END_DOCUMENT; event = p.nextToken()) {
             if (event == XmlPullParser.DOCDECL) throw new IOException("Fuente XML no válida");
             if (event == XmlPullParser.START_TAG) {
                 String name = p.getName();
-                if (name.equals("item")) { item = true; title = date = id = url = videoUrl = ""; audioQuality = videoQuality = -1; }
+                if (name.equals("item")) { item = true; title = date = id = url = videoUrl = ""; audioQuality = videoQuality = -1; duration = 0; chapters = episodeArtwork = ""; }
                 else if (!item && (name.equals("image") || name.equals("itunes:image"))) {
                     String href = p.getAttributeValue(null, "href");
                     if (href != null) artwork = Podcast.artworkUrl(href); else channelImage = true;
@@ -158,9 +158,12 @@ final class Repository {
                 else if (!item && channelImage && name.equals("url")) rssArtwork = Podcast.artworkUrl(p.nextText());
                 else if (!item && !channelImage && name.equals("title") && channelTitle.isEmpty()) channelTitle = p.nextText();
                 else if (item) {
-                    if (name.equals("title")) title = p.nextText();
+                    if (name.equals("image") || name.equals("itunes:image") || name.equals("media:thumbnail")) { String href = p.getAttributeValue(null, "href"); if (href == null) href = p.getAttributeValue(null, "url"); if (href != null) episodeArtwork = Podcast.artworkUrl(href); }
+                    else if (name.equals("title")) title = p.nextText();
                     else if (name.equals("pubDate")) date = p.nextText();
                     else if (name.equals("guid")) id = p.nextText();
+                    else if (name.equals("itunes:duration") || name.equals("duration")) duration = TimeFormat.parse(p.nextText());
+                    else if (name.equals("podcast:chapters") || name.equals("chapters")) { String u = p.getAttributeValue(null, "url"); if (u != null) try { chapters = normalizeFeed(u); } catch (Exception ignored) { } }
                     else if (name.equals("enclosure") || name.equals("media:content") || name.equals("content")) {
                         String u = p.getAttributeValue(null, "url"); if (u == null || !u.startsWith("https://")) continue;
                         String type = p.getAttributeValue(null, "type"), medium = p.getAttributeValue(null, "medium");
@@ -175,7 +178,7 @@ final class Repository {
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("image")) { channelImage = false;
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("item")) {
                 if (url.isEmpty()) url = videoUrl;
-                if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url, videoUrl));
+                if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url, videoUrl, duration, chapters, episodeArtwork));
                 item = false;
             }
         }
@@ -259,15 +262,18 @@ final class Repository {
         return downloadStatus(e) == DownloadManager.STATUS_SUCCESSFUL ? downloads.getUriForDownloadedFile(downloadId(e)) : null;
     }
     Uri playbackUri(Episode e) { Uri local = localUri(e); return local != null ? local : Uri.parse(e.url); }
-    void download(Episode e) {
+    void download(Episode e) { download(e, prefs.getBoolean("wifiOnly", false), false); }
+    void download(Episode e, boolean wifiOnly, boolean automatic) {
         if (downloadStatus(e) == DownloadManager.STATUS_SUCCESSFUL || downloadStatus(e) == DownloadManager.STATUS_RUNNING || downloadStatus(e) == DownloadManager.STATUS_PENDING || downloadStatus(e) == DownloadManager.STATUS_PAUSED) return;
         long old = downloadId(e); if (old >= 0) downloads.remove(old);
         DownloadManager.Request r = new DownloadManager.Request(Uri.parse(e.url)).setTitle(e.title).setDescription("Onda")
             .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-            .setAllowedNetworkTypes(prefs.getBoolean("wifiOnly", false) ? DownloadManager.Request.NETWORK_WIFI : DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE)
-            .setAllowedOverMetered(!prefs.getBoolean("wifiOnly", false)).setAllowedOverRoaming(false)
+            .setAllowedNetworkTypes(wifiOnly ? DownloadManager.Request.NETWORK_WIFI : DownloadManager.Request.NETWORK_WIFI | DownloadManager.Request.NETWORK_MOBILE)
+            .setAllowedOverMetered(!wifiOnly).setAllowedOverRoaming(false)
             .setDestinationInExternalFilesDir(context, "episodes", key(e.id) + "-" + System.currentTimeMillis() + (e.url.equals(e.videoUrl) ? ".mp4" : ".audio"));
-        long id = downloads.enqueue(r); prefs.edit().putLong("download:" + key(e.id), id).apply();
+        long id = downloads.enqueue(r); prefs.edit().putLong("download:" + key(e.id), id).putBoolean("automatic:" + key(e.id), automatic).apply();
     }
+    long duration(Episode e) { return prefs.getLong("duration:" + key(e.id), e.durationMs); }
+    LibraryEntry entry(String id) { try { return LibraryEntry.from(new org.json.JSONObject(prefs.getString("entry:" + key(id), ""))); } catch (Exception ignored) { return null; } }
     void removeDownload(Episode e) { long id = downloadId(e); if (id >= 0) downloads.remove(id); prefs.edit().remove("download:" + key(e.id)).apply(); }
 }

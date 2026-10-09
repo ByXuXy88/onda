@@ -12,7 +12,7 @@ public final class DownloadsActivity extends Activity {
     private final java.util.concurrent.ExecutorService worker = java.util.concurrent.Executors.newSingleThreadExecutor();
     private List<Repository.StoredDownload> downloads = new ArrayList<>();
     @Override public void onCreate(Bundle state) {
-        super.onCreate(state); repository = new Repository(this); getWindow().setStatusBarColor(Color.BLACK); getWindow().setNavigationBarColor(Color.BLACK);
+        super.onCreate(state); UiPreferences.apply(this); repository = new Repository(this); getWindow().setStatusBarColor(Color.BLACK); getWindow().setNavigationBarColor(Color.BLACK);
         ScrollView scroll = new ScrollView(this); scroll.setBackgroundColor(Color.BLACK); scroll.setOnApplyWindowInsetsListener((v, insets) -> { v.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom()); return insets; });
         content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(dp(20), dp(16), dp(20), dp(20)); scroll.addView(content); setContentView(scroll); refresh();
     }

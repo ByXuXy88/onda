@@ -11,6 +11,7 @@ import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.session.*;
 
 public final class PlaybackService extends MediaSessionService {
+    static final String PREPARE_RESTORE = "onda.prepareRestore";
     private ExoPlayer player;
     private MediaSession session;
     private Repository repository;
@@ -24,6 +25,7 @@ public final class PlaybackService extends MediaSessionService {
             save(); handler.postDelayed(this, 1000);
         }
     };
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     @Override public void onCreate() {
         super.onCreate(); repository = new Repository(this);
         player = new ExoPlayer.Builder(this).build();
@@ -34,7 +36,8 @@ public final class PlaybackService extends MediaSessionService {
         player.addListener(new Player.Listener() {
             @Override public void onMediaItemTransition(MediaItem item, int reason) {
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !previousId.isEmpty()) repository.setListened(previousId, true);
-                previousId = item == null ? "" : item.mediaId;
+                if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
+                previousId = item == null ? "" : item.mediaId; repository.prefs.edit().putString("activeEpisode", previousId).apply();
                 if (item != null) {
                     if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && repository.prefs.getBoolean("resumePlayback", true)) { long position = repository.position(item.mediaId); if (position > 0) player.seekTo(position); }
                     repository.prefs.edit().putLong("touched:" + Repository.key(item.mediaId), System.currentTimeMillis()).apply();
@@ -52,12 +55,24 @@ public final class PlaybackService extends MediaSessionService {
             }
             @Override public void onPlaybackStateChanged(int state) {
                 if (state == Player.STATE_ENDED && !previousId.isEmpty()) repository.setListened(previousId, true);
+                if (state == Player.STATE_ENDED && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
             }
         });
         PendingIntent activity = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        session = new MediaSession.Builder(this, player).setSessionActivity(activity).build();
+        session = new MediaSession.Builder(this, player).setSessionActivity(activity).setCallback(new MediaSession.Callback() {
+            @Override public MediaSession.ConnectionResult onConnect(MediaSession session, MediaSession.ControllerInfo info) {
+                SessionCommands commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS;
+                if (getPackageName().equals(info.getPackageName())) commands = commands.buildUpon().add(new SessionCommand(PREPARE_RESTORE, android.os.Bundle.EMPTY)).build();
+                return new MediaSession.ConnectionResult.AcceptedResultBuilder(session).setAvailableSessionCommands(commands).build();
+            }
+            @Override public com.google.common.util.concurrent.ListenableFuture<SessionResult> onCustomCommand(MediaSession session, MediaSession.ControllerInfo info, SessionCommand command, android.os.Bundle args) {
+                if (PREPARE_RESTORE.equals(command.customAction) && getPackageName().equals(info.getPackageName())) { prepareForRestore(); return com.google.common.util.concurrent.Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS)); }
+                return com.google.common.util.concurrent.Futures.immediateFuture(new SessionResult(SessionError.ERROR_NOT_SUPPORTED));
+            }
+        }).build();
         handler.post(checkpoint);
     }
+    void prepareForRestore() { player.pause(); save(); player.clearMediaItems(); repository.prefs.edit().remove("sleepEpisode").remove("sleepDeadline").remove("activeEpisode").apply(); }
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     private void applyPreferences() {
         if (player == null) return;
@@ -78,7 +93,7 @@ public final class PlaybackService extends MediaSessionService {
         return getPackageName().equals(controllerInfo.getPackageName()) || controllerInfo.isTrusted() ? session : null;
     }
     @Override public void onDestroy() {
-        save(); handler.removeCallbacksAndMessages(null);
+        save(); repository.prefs.edit().remove("activeEpisode").apply(); handler.removeCallbacksAndMessages(null);
         repository.prefs.unregisterOnSharedPreferenceChangeListener(preferencesChanged);
         if (session != null) session.release(); if (player != null) player.release(); super.onDestroy();
     }
