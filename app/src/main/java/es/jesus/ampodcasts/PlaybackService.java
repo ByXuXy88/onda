@@ -13,6 +13,10 @@ import androidx.media3.session.*;
 public final class PlaybackService extends MediaSessionService {
     static final String PREPARE_RESTORE = "onda.prepareRestore";
     static final String JUMP_BACK = "onda.jumpBack", JUMP_FORWARD = "onda.jumpForward";
+    static final String UNDO_AD = "onda.undoAd";
+    private String adCacheId="", adCacheText="", lastAdId="";
+    private AdSegments.Record adCache;
+    private long lastAdStart=-1, lastAdFrom=-1;
     private ExoPlayer player;
     private MediaSession session;
     private Repository repository;
@@ -25,12 +29,13 @@ public final class PlaybackService extends MediaSessionService {
         @Override public void run() {
             long deadline = repository.prefs.getLong("sleepDeadline", 0);
             if (deadline > 0 && SystemClock.elapsedRealtime() >= deadline) { player.pause(); repository.prefs.edit().remove("sleepDeadline").apply(); }
-            applyOffsets(); save(); handler.postDelayed(this, 1000);
+            applyOffsets(); applyAdSkips(); save(); handler.postDelayed(this, 1000);
         }
     };
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     @Override public void onCreate() {
         super.onCreate(); repository = new Repository(this);
+        AdSegments.prefs(this).edit().remove("lastSkipId").apply();
         DefaultMediaNotificationProvider notificationProvider = new DefaultMediaNotificationProvider.Builder(this).build();
         notificationProvider.setSmallIcon(R.drawable.ic_notification_onda);
         setMediaNotificationProvider(notificationProvider);
@@ -41,6 +46,7 @@ public final class PlaybackService extends MediaSessionService {
         applyPreferences(); repository.prefs.registerOnSharedPreferenceChangeListener(preferencesChanged);
         player.addListener(new Player.Listener() {
             @Override public void onMediaItemTransition(MediaItem item, int reason) {
+                if(item==null || !item.mediaId.equals(lastAdId))clearLastAd();
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !previousId.isEmpty()) repository.setListened(previousId, true);
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
                 endingSkippedId = ""; initialSkipPending = item != null && (!repository.prefs.getBoolean("resumePlayback",true) || repository.position(item.mediaId) == 0);
@@ -73,11 +79,12 @@ public final class PlaybackService extends MediaSessionService {
                 SessionCommands commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().add(new SessionCommand(JUMP_BACK, android.os.Bundle.EMPTY)).add(new SessionCommand(JUMP_FORWARD, android.os.Bundle.EMPTY)).build();
                 Player.Commands playerCommands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS;
                 if (session.isMediaNotificationController(info)) playerCommands = playerCommands.buildUpon().remove(Player.COMMAND_SEEK_TO_PREVIOUS).remove(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM).remove(Player.COMMAND_SEEK_TO_NEXT).remove(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM).build();
-                if (getPackageName().equals(info.getPackageName())) commands = commands.buildUpon().add(new SessionCommand(PREPARE_RESTORE, android.os.Bundle.EMPTY)).build();
+                if (getPackageName().equals(info.getPackageName())) commands = commands.buildUpon().add(new SessionCommand(PREPARE_RESTORE, android.os.Bundle.EMPTY)).add(new SessionCommand(UNDO_AD,android.os.Bundle.EMPTY)).build();
                 return new MediaSession.ConnectionResult.AcceptedResultBuilder(session).setAvailableSessionCommands(commands).setAvailablePlayerCommands(playerCommands).build();
             }
             @Override public com.google.common.util.concurrent.ListenableFuture<SessionResult> onCustomCommand(MediaSession session, MediaSession.ControllerInfo info, SessionCommand command, android.os.Bundle args) {
                 if (JUMP_BACK.equals(command.customAction) || JUMP_FORWARD.equals(command.customAction)) return com.google.common.util.concurrent.Futures.immediateFuture(notificationJump(command.customAction));
+                if(UNDO_AD.equals(command.customAction) && getPackageName().equals(info.getPackageName()))return com.google.common.util.concurrent.Futures.immediateFuture(undoAd());
                 if (PREPARE_RESTORE.equals(command.customAction) && getPackageName().equals(info.getPackageName())) { prepareForRestore(); return com.google.common.util.concurrent.Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS)); }
                 return com.google.common.util.concurrent.Futures.immediateFuture(new SessionResult(SessionError.ERROR_NOT_SUPPORTED));
             }
@@ -116,6 +123,26 @@ public final class PlaybackService extends MediaSessionService {
         if (player.getDuration() > 0) target = Math.min(target, player.getDuration());
         player.seekTo(target); save(); return new SessionResult(SessionResult.RESULT_SUCCESS);
     }
+    private void clearLastAd(){lastAdId="";lastAdFrom=-1;lastAdStart=-1;AdSegments.prefs(this).edit().remove("lastSkipId").apply();}
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    void applyAdSkips(){
+        MediaItem item=player.getCurrentMediaItem();if(item==null || !player.isPlaying() || !player.isCurrentMediaItemSeekable() || item.localConfiguration==null)return;
+        String text=AdSegments.prefs(this).getString(AdSegments.key(item.mediaId),"");
+        if(!item.mediaId.equals(adCacheId) || !text.equals(adCacheText)){adCacheId=item.mediaId;adCacheText=text;adCache=AdSegments.decode(text);}
+        if(adCache==null || !adCache.enabled)return;
+        LibraryEntry entry=repository.entry(item.mediaId);if(entry==null || adCache.downloadId!=repository.downloadId(entry.episode) || !adCache.source.equals(entry.episode.url))return;
+        android.net.Uri local=repository.localUri(entry.episode);if(local==null || !local.equals(item.localConfiguration.uri))return;
+        AdSegments.Segment segment=adCache.at(player.getCurrentPosition(),player.getDuration());if(segment==null)return;
+        long target=Math.min(segment.end,player.getDuration()-1);if(target<=player.getCurrentPosition())return;
+        lastAdId=item.mediaId;lastAdFrom=player.getCurrentPosition();lastAdStart=segment.start;
+        player.seekTo(target);save();AdSegments.prefs(this).edit().putString("lastSkipId",item.mediaId).apply();
+    }
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    SessionResult undoAd(){
+        MediaItem item=player.getCurrentMediaItem();if(item==null || !item.mediaId.equals(lastAdId) || lastAdFrom<0 || !player.isCurrentMediaItemSeekable())return new SessionResult(SessionError.ERROR_INVALID_STATE);
+        try{AdSegments.ignore(this,item.mediaId,lastAdStart);player.seekTo(Math.min(lastAdFrom,Math.max(0,player.getDuration()-1)));save();clearLastAd();return new SessionResult(SessionResult.RESULT_SUCCESS);}
+        catch(Exception e){return new SessionResult(SessionError.ERROR_UNKNOWN);}
+    }
     private void applyOffsets() {
         MediaItem item = player.getCurrentMediaItem(); if(item==null || player.getPlaybackState()!=Player.STATE_READY || player.getDuration()<=0) return;
         android.os.Bundle extras=item.mediaMetadata.extras; if(extras==null) return; String feed=extras.getString("feed", "");
@@ -136,7 +163,7 @@ public final class PlaybackService extends MediaSessionService {
         return getPackageName().equals(controllerInfo.getPackageName()) || controllerInfo.isTrusted() ? session : null;
     }
     @Override public void onDestroy() {
-        save(); repository.prefs.edit().remove("activeEpisode").apply(); handler.removeCallbacksAndMessages(null);
+        save(); clearLastAd(); repository.prefs.edit().remove("activeEpisode").apply(); handler.removeCallbacksAndMessages(null);
         repository.prefs.unregisterOnSharedPreferenceChangeListener(preferencesChanged);
         if (session != null) session.release(); if (player != null) player.release(); super.onDestroy();
     }

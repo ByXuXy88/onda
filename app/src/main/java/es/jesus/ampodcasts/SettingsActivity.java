@@ -33,6 +33,7 @@ public final class SettingsActivity extends Activity {
         option("resumePlayback", "Recordar dónde lo dejaste", "Reanuda cada episodio desde su última posición.", true);
         action("Saltos de avance y retroceso", () -> new AlertDialog.Builder(this).setTitle("Elige el control").setItems(new String[]{"Retroceder", "Avanzar"}, (d, side) -> new AlertDialog.Builder(this).setTitle("Segundos por pulsación").setItems(new String[]{"10 segundos", "15 segundos", "30 segundos", "60 segundos"}, (dialog, index) -> repository.prefs.edit().putInt(side==0 ? "jumpBack" : "jumpForward", new int[]{10,15,30,60}[index]).apply()).show()).show());
         title("Apariencia", 18);
+        action("Saltar anuncios · Gemini Beta", () -> startActivity(new Intent(this, GeminiAdsActivity.class)));
         option("dynamicColors", "Colores del sistema", "En Android 12 o posterior, adapta el acento al fondo del móvil. El fondo sigue siendo negro OLED.", true);
         title("Descargas y biblioteca", 18);
         option("wifiOnly", "Descargar solo por Wi‑Fi", "Se aplica a las nuevas descargas. Las que ya están en curso conservan su configuración.", false);
