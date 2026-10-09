@@ -12,6 +12,7 @@ import androidx.media3.session.*;
 
 public final class PlaybackService extends MediaSessionService {
     static final String PREPARE_RESTORE = "onda.prepareRestore";
+    static final String JUMP_BACK = "onda.jumpBack", JUMP_FORWARD = "onda.jumpForward";
     private ExoPlayer player;
     private MediaSession session;
     private Repository repository;
@@ -19,7 +20,7 @@ public final class PlaybackService extends MediaSessionService {
     private boolean initialSkipPending;
     private String endingSkippedId = "";
     private final Handler handler = new Handler(Looper.getMainLooper());
-    private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChanged = (prefs, key) -> { if ("speed".equals(key) || "skipSilence".equals(key)) handler.post(this::applyPreferences); };
+    private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChanged = (prefs, key) -> { if ("speed".equals(key) || "skipSilence".equals(key) || "jumpBack".equals(key) || "jumpForward".equals(key)) handler.post(this::applyPreferences); };
     private final Runnable checkpoint = new Runnable() {
         @Override public void run() {
             long deadline = repository.prefs.getLong("sleepDeadline", 0);
@@ -64,13 +65,16 @@ public final class PlaybackService extends MediaSessionService {
             }
         });
         PendingIntent activity = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        session = new MediaSession.Builder(this, player).setSessionActivity(activity).setCallback(new MediaSession.Callback() {
+        session = new MediaSession.Builder(this, player).setSessionActivity(activity).setMediaButtonPreferences(notificationButtons()).setCallback(new MediaSession.Callback() {
             @Override public MediaSession.ConnectionResult onConnect(MediaSession session, MediaSession.ControllerInfo info) {
-                SessionCommands commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS;
+                SessionCommands commands = MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon().add(new SessionCommand(JUMP_BACK, android.os.Bundle.EMPTY)).add(new SessionCommand(JUMP_FORWARD, android.os.Bundle.EMPTY)).build();
+                Player.Commands playerCommands = MediaSession.ConnectionResult.DEFAULT_PLAYER_COMMANDS;
+                if (session.isMediaNotificationController(info)) playerCommands = playerCommands.buildUpon().remove(Player.COMMAND_SEEK_TO_PREVIOUS).remove(Player.COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM).remove(Player.COMMAND_SEEK_TO_NEXT).remove(Player.COMMAND_SEEK_TO_NEXT_MEDIA_ITEM).build();
                 if (getPackageName().equals(info.getPackageName())) commands = commands.buildUpon().add(new SessionCommand(PREPARE_RESTORE, android.os.Bundle.EMPTY)).build();
-                return new MediaSession.ConnectionResult.AcceptedResultBuilder(session).setAvailableSessionCommands(commands).build();
+                return new MediaSession.ConnectionResult.AcceptedResultBuilder(session).setAvailableSessionCommands(commands).setAvailablePlayerCommands(playerCommands).build();
             }
             @Override public com.google.common.util.concurrent.ListenableFuture<SessionResult> onCustomCommand(MediaSession session, MediaSession.ControllerInfo info, SessionCommand command, android.os.Bundle args) {
+                if (JUMP_BACK.equals(command.customAction) || JUMP_FORWARD.equals(command.customAction)) return com.google.common.util.concurrent.Futures.immediateFuture(notificationJump(command.customAction));
                 if (PREPARE_RESTORE.equals(command.customAction) && getPackageName().equals(info.getPackageName())) { prepareForRestore(); return com.google.common.util.concurrent.Futures.immediateFuture(new SessionResult(SessionResult.RESULT_SUCCESS)); }
                 return com.google.common.util.concurrent.Futures.immediateFuture(new SessionResult(SessionError.ERROR_NOT_SUPPORTED));
             }
@@ -81,9 +85,32 @@ public final class PlaybackService extends MediaSessionService {
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     private void applyPreferences() {
         if (player == null) return;
+        if (session != null) session.setMediaButtonPreferences(notificationButtons());
         player.setPlaybackSpeed(repository.prefs.getFloat("speed", 1f));
         player.setSkipSilenceEnabled(repository.prefs.getBoolean("skipSilence", false));
         player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().setForceHighestSupportedBitrate(true).build());
+    }
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    java.util.List<CommandButton> notificationButtons() {
+        return java.util.Arrays.asList(notificationButton(false), notificationButton(true));
+    }
+    @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
+    private CommandButton notificationButton(boolean forward) {
+        int seconds = SkipRules.seconds(repository.prefs, forward);
+        int icon = forward ? CommandButton.ICON_SKIP_FORWARD : CommandButton.ICON_SKIP_BACK;
+        if (seconds == 10) icon = forward ? CommandButton.ICON_SKIP_FORWARD_10 : CommandButton.ICON_SKIP_BACK_10;
+        else if (seconds == 15) icon = forward ? CommandButton.ICON_SKIP_FORWARD_15 : CommandButton.ICON_SKIP_BACK_15;
+        else if (seconds == 30) icon = forward ? CommandButton.ICON_SKIP_FORWARD_30 : CommandButton.ICON_SKIP_BACK_30;
+        return new CommandButton.Builder(icon).setDisplayName((forward ? "Avanzar " : "Retroceder ") + seconds + " segundos")
+                .setSessionCommand(new SessionCommand(forward ? JUMP_FORWARD : JUMP_BACK, android.os.Bundle.EMPTY))
+                .setSlots(forward ? CommandButton.SLOT_FORWARD : CommandButton.SLOT_BACK).build();
+    }
+    SessionResult notificationJump(String action) {
+        if (!JUMP_BACK.equals(action) && !JUMP_FORWARD.equals(action)) return new SessionResult(SessionError.ERROR_NOT_SUPPORTED);
+        if (player == null || player.getCurrentMediaItem() == null || !player.isCurrentMediaItemSeekable()) return new SessionResult(SessionError.ERROR_INVALID_STATE);
+        long target = Math.max(0, player.getCurrentPosition() + (JUMP_FORWARD.equals(action) ? 1 : -1) * SkipRules.seconds(repository.prefs, JUMP_FORWARD.equals(action)) * 1000L);
+        if (player.getDuration() > 0) target = Math.min(target, player.getDuration());
+        player.seekTo(target); save(); return new SessionResult(SessionResult.RESULT_SUCCESS);
     }
     private void applyOffsets() {
         MediaItem item = player.getCurrentMediaItem(); if(item==null || player.getPlaybackState()!=Player.STATE_READY || player.getDuration()<=0) return;
