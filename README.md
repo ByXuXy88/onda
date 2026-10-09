@@ -9,19 +9,23 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.7" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.8" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.7"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.8"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.7) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.8) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
 </div>
 
 ## Así se ve Onda
+
+| Tus programas | Reproductor completo |
+| :---: | :---: |
+| <img src="docs/images/podcasts.png" alt="Biblioteca de podcasts con portadas y minirreproductor" width="280" /> | <img src="docs/images/reproductor.png" alt="Reproductor completo con portada grande, controles, capítulos y marcas" width="280" /> |
 
 | Tu biblioteca | Añade tus podcasts | RSS o Apple Podcasts |
 | :---: | :---: | :---: |
@@ -36,7 +40,7 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | :---: | :---: | :---: |
 | <img src="docs/images/opciones.png" alt="Opciones de descarga automática y avisos por podcast" width="240" /> | <img src="docs/images/descubrir.png" alt="Exploración por idioma y categoría" width="240" /> | <img src="docs/images/texto-grande.png" alt="Miniaturas, duración en horas y texto ampliado" width="240" /> |
 
-<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.6 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
+<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.8 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
 
 ## Qué puedes hacer
 
@@ -49,6 +53,9 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | ⬇️ | **Llévalos contigo** | Descarga episodios para escucharlos sin conexión y conserva el progreso. |
 | ↔️ | **Controla la escucha** | Retrocede 15 segundos, avanza 30 segundos y cambia entre tus programas. |
 | ⚙️ | **Ajusta Onda a tu gusto** | Velocidad de 0,75× a 2×, omitir silencios, reanudar, actualizar al abrir y ordenar episodios. |
+| 🧭 | **Explora sin interrumpir** | Biblioteca con portadas, pantalla por programa y minirreproductor. |
+| 🔖 | **Marcas personales** | Guarda posiciones con nombres por episodio; incluidas en la copia completa. |
+| ⏭️ | **Saltos a tu medida** | Tiempos de inicio y final por programa y botones manuales ajustables. |
 | 🖼️ | **Reconoce tus programas** | Miniaturas en cada episodio: imagen propia del RSS o logo del programa, con caché local. |
 | ⏱️ | **Temporizador para dormir** | Pausa tras 15, 30, 45 o 60 minutos o al terminar el episodio actual. |
 | 📤 | **Comparte con Onda** | Recibe un enlace desde otra app y confirma el programa que quieres añadir. |
@@ -76,17 +83,21 @@ El proyecto parte de esa idea y busca evolucionar hacia una aplicación independ
 
 Cada persona decide qué programas añadir. **Una instalación nueva no incluye ningún podcast ni ningún audio.** Onda es independiente: no es una aplicación oficial de Apple ni sincroniza tu cuenta de Apple Podcasts.
 
-## Estado de la versión 1.7
+## Estado de la versión 1.8
 
-El reproductor muestra la portada y el nombre del programa, un botón principal más grande y controles de salto redondeados con respuesta visual al pulsar. La velocidad, los capítulos y el temporizador están agrupados encima de los controles.
+La biblioteca muestra tus podcasts en tarjetas con portada. Cada programa abre sus episodios, descripción y opciones. Un minirreproductor permanece visible mientras exploras la biblioteca y otros programas; al tocarlo abre un reproductor completo con portada grande, velocidad visible, temporizador, descargas y cola editable. Descubrir y Descargas se abren desde la navegación inferior.
 
-Las mejoras están disponibles en [**Onda 1.7**](https://github.com/ByXuXy88/onda/releases/tag/v1.7). Descarga `Onda.apk` e instala sobre Onda 1.5 o 1.6 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
+En el reproductor puedes consultar los capítulos por temas publicados por el editor, ver el capítulo actual y saltar al siguiente. También puedes guardar marcas personales con nombre y volver a ellas. Las marcas y los nuevos ajustes se incluyen en la copia completa.
 
-La vista previa permanece disponible como instalación independiente. La reproducción y el vídeo en ventana flotante aún deben comprobarse en un dispositivo físico.
+Desde las opciones del programa puedes omitir un tiempo fijo de inicio y final (0 desactiva; hasta 1800 segundos). El inicio respeta una escucha reanudada y el final solo se omite con duración conocida, conservando el comportamiento de la cola y del temporizador. Si ambos saltos abarcan todo el episodio, se desactivan para ese episodio. No se detectan anuncios automáticamente ni se analiza o envía el audio para transcribirlo. En Ajustes puedes elegir saltos manuales de 10, 15, 30 o 60 segundos y activar o desactivar los colores del sistema en la biblioteca y el reproductor (Android 12 o posterior), con fondo negro OLED.
+
+Las mejoras están disponibles en [**Onda 1.8**](https://github.com/ByXuXy88/onda/releases/tag/v1.8). Descarga `Onda.apk` e instala sobre Onda 1.5, 1.6 o 1.7 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
+
+Las compilaciones de vista previa usan un paquete independiente. La reproducción y el vídeo en ventana flotante aún deben comprobarse en un dispositivo físico.
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.7](https://github.com/ByXuXy88/onda/releases/tag/v1.7) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+1. Abre la [versión 1.8](https://github.com/ByXuXy88/onda/releases/tag/v1.8) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
 2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o un enlace de Apple, o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
@@ -136,7 +147,7 @@ Para publicar actualizaciones, usa una clave privada estable que controles y man
 - `ONDA_KEY_ALIAS`: alias de la clave.
 - `ONDA_KEY_PASSWORD`: contraseña de la clave.
 
-Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. Onda 1.6 y 1.7 mantienen esa misma firma original. La clave se conserva fuera del repositorio público.
+Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. Onda 1.6, 1.7 y 1.8 mantienen esa misma firma original. La clave se conserva fuera del repositorio público.
 
 ### Biblioteca vacía y actualización
 
