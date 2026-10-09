@@ -28,9 +28,9 @@ public class EmptyLibraryUiTest {
             View root = activity.getWindow().getDecorView();
             root.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(2400, View.MeasureSpec.EXACTLY));
             root.layout(0, 0, 1080, 2400);
-            ImageButton button = (ImageButton) findByDescription(root, "Todos los episodios");
+            ImageButton button = (ImageButton) findByDescription(root, "Añadir podcasts");
             int size = (int) (24 * activity.getResources().getDisplayMetrics().density + .5f);
-            assertTrue(button.getWidth() > button.getHeight());
+            assertEquals(button.getWidth(), button.getHeight());
             assertEquals(size, button.getDrawable().getIntrinsicWidth());
             assertEquals(size, button.getDrawable().getIntrinsicHeight());
             assertEquals(size, button.getDrawable().getBounds().width());
