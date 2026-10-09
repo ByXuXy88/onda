@@ -25,6 +25,13 @@ public class PlaybackSettingsTest {
             player.seekToNextMediaItem(); assertEquals("b", player.getCurrentMediaItem().mediaId); assertTrue(repository.queue().isEmpty()); assertFalse(repository.listened("a"));
         } finally { controller.destroy(); }
     }
+    @Test public void restoringWhilePlayerExistsKeepsRestoredProgressAfterCheckpoint() throws Exception {
+        Repository r = new Repository(RuntimeEnvironment.getApplication()); Podcast podcast = new Podcast("Programa", "https://example.com/rss"); r.addPodcast(podcast); LibraryEntry entry = new LibraryEntry(new Episode("a", "Episodio", "", "https://example.com/a.mp3"), podcast); r.remember(entry); r.savePosition("a", 3600000); java.io.ByteArrayOutputStream backup = new java.io.ByteArrayOutputStream(); BackupStore.export(RuntimeEnvironment.getApplication(), backup);
+        ServiceController<PlaybackService> service = Robolectric.buildService(PlaybackService.class).create(); try {
+            java.lang.reflect.Field field = PlaybackService.class.getDeclaredField("player"); field.setAccessible(true); ExoPlayer player = (ExoPlayer) field.get(service.get()); player.setMediaItem(entry.mediaItem(service.get(), false)); service.get().prepareForRestore();
+            BackupStore.restore(service.get(), BackupStore.validate(new java.io.ByteArrayInputStream(backup.toByteArray()))); ShadowSystemClock.advanceBy(Duration.ofSeconds(2)); Shadows.shadowOf(Looper.getMainLooper()).idle(); assertNull(player.getCurrentMediaItem()); assertEquals(3600000, r.position("a"));
+        } finally { service.destroy(); }
+    }
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     @Test public void backgroundPlayerAppliesSettingsAndPausesWhenTimerExpires() throws Exception {
         Repository r = new Repository(RuntimeEnvironment.getApplication()); r.prefs.edit().putFloat("speed", 1.5f).putBoolean("skipSilence", true).commit();
