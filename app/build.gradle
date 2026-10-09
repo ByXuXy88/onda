@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'es.jesus.ampodcasts'
     compileSdk 35
-    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 7; versionName '1.6' }
+    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 8; versionName '1.7' }
     def signingPath = System.getenv('ONDA_KEYSTORE_PATH')
     if (signingPath) {
         signingConfigs {
