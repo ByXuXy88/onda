@@ -30,7 +30,8 @@ public final class MainActivity extends Activity {
     private ImageButton toggle, refresh, allTab, offlineTab, remove;
     private Spinner programs;
     private TextView programTitle, programDescription, cover;
-    private ImageView coverImage;
+    private ImageView coverImage, playerArtwork;
+    private TextView playerProgram;
     private ImageButton sleep;
     private List<Podcast> podcasts = new ArrayList<>();
     private int requestGeneration;
@@ -99,10 +100,18 @@ public final class MainActivity extends Activity {
         refresh = icon("refresh", "Actualizar episodios"); refresh.setContentDescription("Actualizar episodios"); refresh.setOnClickListener(v -> load()); tabs.addView(refresh, new LinearLayout.LayoutParams(dp(55), dp(48)));
         head.addView(tabs); status = label("", 12, MUTED, false); status.setPadding(0, dp(8), 0, 0); head.addView(status); root.addView(head);
         ScrollView scroll = new ScrollView(this); list = column(16); scroll.addView(list); root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
-        LinearLayout player = column(16); player.setBackgroundColor(Color.BLACK);
-        current = label("Elige un episodio", 15, INK, true); current.setMaxLines(2); player.addView(current);
+        LinearLayout player = column(14); player.setBackground(bg(0xff111318, 24));
+        LinearLayout playerHeader = row();
+        FrameLayout playerCover = new FrameLayout(this); playerCover.setBackground(bg(0xff263344, 14)); playerCover.setClipToOutline(true);
+        ImageView placeholder = new ImageView(this); placeholder.setImageDrawable(new ControlIcon("wave", PURPLE, dp(32))); placeholder.setPadding(dp(12),dp(12),dp(12),dp(12)); playerCover.addView(placeholder,new FrameLayout.LayoutParams(-1,-1));
+        playerArtwork = new ImageView(this); playerArtwork.setScaleType(ImageView.ScaleType.CENTER_CROP); playerArtwork.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); playerCover.addView(playerArtwork,new FrameLayout.LayoutParams(-1,-1));
+        playerHeader.addView(playerCover,new LinearLayout.LayoutParams(dp(56),dp(56)));
+        LinearLayout playerText = column(0); playerText.setPadding(dp(12),0,0,0);
+        current = label("Elige un episodio", 16, INK, true); current.setMaxLines(2); playerText.addView(current);
+        playerProgram = label("Tu próxima escucha",12,MUTED,false); playerProgram.setMaxLines(1); playerText.addView(playerProgram);
+        playerHeader.addView(playerText,new LinearLayout.LayoutParams(0,-2,1)); player.addView(playerHeader);
         videoButton = icon("video", "Abrir vídeo actual"); videoButton.setVisibility(View.GONE); videoButton.setOnClickListener(v -> startActivity(new Intent(this, VideoActivity.class))); player.addView(videoButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        seek = new SeekBar(this); seek.setMax(1000); player.addView(seek, new LinearLayout.LayoutParams(-1, dp(30)));
+        seek = new SeekBar(this); seek.setMax(1000); player.addView(seek, new LinearLayout.LayoutParams(-1, dp(48)));
         seek.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             public void onProgressChanged(SeekBar s, int p, boolean user) { }
             public void onStartTrackingTouch(SeekBar s) { seeking = true; }
@@ -111,12 +120,18 @@ public final class MainActivity extends Activity {
         time = label("0 min 00 s / —", 12, MUTED, false); time.setGravity(Gravity.CENTER); player.addView(time);
         LinearLayout tools = row(); ImageButton speedButton = icon("settings", "Cambiar velocidad de reproducción"), chaptersButton = icon("list", "Capítulos del episodio");
         speedButton.setOnClickListener(v -> PlaybackTools.speed(this)); chaptersButton.setOnClickListener(v -> { if (controller != null) PlaybackTools.chapters(this, controller, worker); });
-        tools.addView(speedButton, new LinearLayout.LayoutParams(dp(48), dp(48))); tools.addView(chaptersButton, new LinearLayout.LayoutParams(dp(48), dp(48))); player.addView(tools);
+        tools.addView(speedButton, new LinearLayout.LayoutParams(dp(48), dp(48))); tools.addView(chaptersButton, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        Space toolSpace = new Space(this); tools.addView(toolSpace,new LinearLayout.LayoutParams(0,1,1));
+        sleep = icon("timer", "Temporizador para dormir"); sleep.setOnClickListener(v -> sleepMenu()); tools.addView(sleep,new LinearLayout.LayoutParams(dp(48),dp(48))); player.addView(tools);
         LinearLayout controls = row(); ImageButton back = icon("rewind", "Retroceder 15 segundos"), forward = icon("forward", "Avanzar 30 segundos"); toggle = icon("play", "Reproducir");
         back.setOnClickListener(v -> { if (controller != null) controller.seekTo(Math.max(0, controller.getCurrentPosition() - 15000)); });
         forward.setOnClickListener(v -> { if (controller != null) controller.seekTo(Math.min(Math.max(0, controller.getDuration() > 0 ? controller.getDuration() : Long.MAX_VALUE), controller.getCurrentPosition() + 30000)); });
         toggle.setOnClickListener(v -> { if (controller == null) return; if (controller.isPlaying()) controller.pause(); else { if (controller.getPlaybackState() == Player.STATE_ENDED) controller.seekTo(0); controller.prepare(); controller.play(); } });
-        controls.addView(back, new LinearLayout.LayoutParams(0, dp(48), 1)); controls.addView(toggle, new LinearLayout.LayoutParams(0, dp(48), 2)); controls.addView(forward, new LinearLayout.LayoutParams(0, dp(48), 1)); sleep = icon("timer", "Temporizador para dormir"); sleep.setOnClickListener(v -> sleepMenu()); controls.addView(sleep, new LinearLayout.LayoutParams(dp(48), dp(48))); player.addView(controls); root.addView(player);
+        controls.setGravity(Gravity.CENTER); controls.setPadding(0,dp(6),0,0);
+        stylePlaybackControl(back,false); stylePlaybackControl(toggle,true); stylePlaybackControl(forward,false);
+        LinearLayout.LayoutParams skipParams = new LinearLayout.LayoutParams(dp(56),dp(56)); skipParams.setMargins(dp(14),0,dp(14),0);
+        controls.addView(back,skipParams); controls.addView(toggle,new LinearLayout.LayoutParams(dp(72),dp(72))); controls.addView(forward,new LinearLayout.LayoutParams(skipParams)); player.addView(controls);
+        LinearLayout.LayoutParams playerParams = new LinearLayout.LayoutParams(-1,-2); playerParams.setMargins(dp(12),dp(6),dp(12),dp(10)); root.addView(player,playerParams);
         populatePrograms(); render(); BackgroundSync.schedule(this);
         if (!podcasts.isEmpty()) connectPlayer();
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED)
@@ -402,11 +417,13 @@ public final class MainActivity extends Activity {
     }
     private void updatePlayer() {
         boolean has = controller != null && controller.getCurrentMediaItem() != null;
-        toggle.setEnabled(has); seek.setEnabled(has);
+        toggle.setEnabled(has); toggle.setAlpha(has ? 1f : .45f); seek.setEnabled(has);
         long remaining = repository.prefs.getLong("sleepDeadline", 0) - SystemClock.elapsedRealtime(); boolean endSleep = !repository.prefs.getString("sleepEpisode", "").isEmpty(); sleep.setAlpha(remaining > 0 || endSleep ? 1f : .5f); sleep.setContentDescription(endSleep ? "Temporizador: hasta terminar el episodio" : remaining > 0 ? "Temporizador: " + TimeFormat.display(remaining, false) + " restantes" : "Temporizador para dormir");
         videoButton.setVisibility(has && controller.getMediaMetadata().extras != null && controller.getMediaMetadata().extras.getBoolean("video", false) ? View.VISIBLE : View.GONE);
-        if (!has) return;
-        current.setText(controller.getMediaMetadata().title); long duration = Math.max(0, controller.getDuration()), position = Math.max(0, controller.getCurrentPosition());
+        if (!has) { current.setText("Elige un episodio"); playerProgram.setText("Tu próxima escucha"); bindArtwork(playerArtwork, ""); setIcon(toggle, "play", "Reproducir"); seek.setProgress(0); time.setText("0 min 00 s / —"); return; }
+        current.setText(controller.getMediaMetadata().title);
+        playerProgram.setText(controller.getMediaMetadata().artist);
+        android.net.Uri playingArtwork = controller.getMediaMetadata().artworkUri; bindArtwork(playerArtwork,playingArtwork == null ? "" : playingArtwork.toString()); long duration = Math.max(0, controller.getDuration()), position = Math.max(0, controller.getCurrentPosition());
         if (!seeking) seek.setProgress(duration > 0 ? (int) (position * 1000 / duration) : 0);
         time.setText(clock(position) + " / " + (duration > 0 ? clock(duration) + " · Quedan " + clock(Math.max(0, duration - position)) : "Duración aún no disponible"));
         seek.setContentDescription("Posición: " + clock(position) + (duration > 0 ? " de " + clock(duration) : ""));
@@ -448,8 +465,18 @@ public final class MainActivity extends Activity {
         b.setScaleType(ImageView.ScaleType.CENTER_INSIDE); setIcon(b, type, description); return b;
     }
     private void setIcon(ImageButton button, String type, String description) {
-        if (!type.equals(button.getTag())) { button.setImageDrawable(new ControlIcon(type, PURPLE, dp(24))); button.setTag(type); }
+        if (!type.equals(button.getTag())) { button.setImageDrawable(new ControlIcon(type, button == toggle ? 0xff102037 : PURPLE, dp(button == toggle ? 32 : 24))); button.setTag(type); }
         button.setContentDescription(description); button.setTooltipText(description);
+    }
+    private void stylePlaybackControl(ImageButton button, boolean primary) {
+        button.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(primary ? 0x44304760 : 0x44a8c7fa),bg(primary ? PURPLE : 0xff242a34,primary ? 24 : 28),null));
+        button.setPadding(dp(primary ? 20 : 12),dp(primary ? 20 : 12),dp(primary ? 20 : 12),dp(primary ? 20 : 12));
+        button.setOnTouchListener((v,event) -> {
+            if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) v.animate().scaleX(.94f).scaleY(.94f).setDuration(90).start();
+            else if (event.getActionMasked() == android.view.MotionEvent.ACTION_UP || event.getActionMasked() == android.view.MotionEvent.ACTION_CANCEL) v.animate().scaleX(1f).scaleY(1f).setDuration(150).start();
+            return false;
+        });
+        if (primary) { button.setTag(null); setIcon(button,"play","Reproducir"); }
     }
     private GradientDrawable bg(int color, int radius) { GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(radius)); return d; }
 }
