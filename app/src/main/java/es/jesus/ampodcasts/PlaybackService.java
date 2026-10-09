@@ -31,6 +31,9 @@ public final class PlaybackService extends MediaSessionService {
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
     @Override public void onCreate() {
         super.onCreate(); repository = new Repository(this);
+        DefaultMediaNotificationProvider notificationProvider = new DefaultMediaNotificationProvider.Builder(this).build();
+        notificationProvider.setSmallIcon(R.drawable.ic_notification_onda);
+        setMediaNotificationProvider(notificationProvider);
         player = new ExoPlayer.Builder(this).build();
         player.setAudioAttributes(new AudioAttributes.Builder().setContentType(C.AUDIO_CONTENT_TYPE_SPEECH).setUsage(C.USAGE_MEDIA).build(), true);
         player.setHandleAudioBecomingNoisy(true);
