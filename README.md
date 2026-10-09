@@ -9,7 +9,7 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.5" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 1.6 · Desarrollo" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
@@ -32,7 +32,11 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | :---: | :---: | :---: |
 | <img src="docs/images/episodios.png" alt="Episodios con progreso, favoritos y vídeo" width="240" /> | <img src="docs/images/secciones.png" alt="Continuar escuchando, favoritos y cola" width="240" /> | <img src="docs/images/ajustes.png" alt="Calidad original de audio y ajustes" width="240" /> |
 
-<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.5 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
+| Descargas y avisos | Descubrir | Texto ampliado |
+| :---: | :---: | :---: |
+| <img src="docs/images/opciones.png" alt="Opciones de descarga automática y avisos por podcast" width="240" /> | <img src="docs/images/descubrir.png" alt="Exploración por idioma y categoría" width="240" /> | <img src="docs/images/texto-grande.png" alt="Miniaturas, duración en horas y texto ampliado" width="240" /> |
+
+<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.6 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
 
 ## Qué puedes hacer
 
@@ -45,8 +49,8 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | ⬇️ | **Llévalos contigo** | Descarga episodios para escucharlos sin conexión y conserva el progreso. |
 | ↔️ | **Controla la escucha** | Retrocede 15 segundos, avanza 30 segundos y cambia entre tus programas. |
 | ⚙️ | **Ajusta Onda a tu gusto** | Velocidad de 0,75× a 2×, omitir silencios, reanudar, actualizar al abrir y ordenar episodios. |
-| 🖼️ | **Reconoce tus programas** | Portadas del catálogo y del RSS con caché local para verlas sin conexión. |
-| ⏱️ | **Temporizador para dormir** | Pausa la reproducción tras 15, 30, 45 o 60 minutos, también en segundo plano. |
+| 🖼️ | **Reconoce tus programas** | Miniaturas en cada episodio: imagen propia del RSS o logo del programa, con caché local. |
+| ⏱️ | **Temporizador para dormir** | Pausa tras 15, 30, 45 o 60 minutos o al terminar el episodio actual. |
 | 📤 | **Comparte con Onda** | Recibe un enlace desde otra app y confirma el programa que quieres añadir. |
 | 🔊 | **Calidad original** | Reproduce y descarga sin recomprimir. Si el RSS ofrece variantes con calidad indicada, elige la mejor. |
 | 🎬 | **Vídeo del podcast** | Abre el reproductor de vídeo cuando el RSS publica un archivo de vídeo compatible. |
@@ -55,6 +59,14 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 | ✅ | **Escuchados** | Marca episodios manualmente o al terminarlos y ocúltalos desde Ajustes. |
 | 🔍 | **Búsqueda en tu biblioteca** | Encuentra por título los episodios guardados de todos tus programas. |
 | 🧹 | **Control del espacio** | Consulta los MB de descargas y elimina archivos individuales o escuchados. |
+| ⏳ | **Duración clara** | Duración del RSS en la lista; tiempo transcurrido, total y restante en horas, minutos y segundos. |
+| 📥 | **Descargas automáticas** | Activa por programa, solo por Wi-Fi, con límite de 1, 3, 5 o 10 archivos automáticos. |
+| 🔔 | **Nuevos episodios** | Avisos opcionales por programa mediante revisión periódica en segundo plano. |
+| 💾 | **Copia completa** | Exporta y restaura programas, favoritos, cola, progreso y ajustes en JSON. |
+| 🪟 | **Ventana flotante** | Mantiene el vídeo visible al cambiar de aplicación, en dispositivos compatibles. |
+| 📑 | **Capítulos** | Lee capítulos Podcasting 2.0 del RSS y salta a su posición. |
+| 🌍 | **Descubrir** | Explora listas públicas por categoría y verifica el idioma declarado en el RSS. |
+| 🔠 | **Texto ajustable** | Respeta el tamaño del sistema y permite ampliarlo un 15 % o 30 %. |
 
 ## Por qué existe Onda
 
@@ -63,6 +75,12 @@ Onda nació de una necesidad sencilla: escuchar en Android los podcasts que segu
 El proyecto parte de esa idea y busca evolucionar hacia una aplicación independiente para escuchar tus podcasts favoritos, crear tu propia biblioteca y llevar tus episodios contigo, también sin conexión.
 
 Cada persona decide qué programas añadir. **Una instalación nueva no incluye ningún podcast ni ningún audio.** Onda es independiente: no es una aplicación oficial de Apple ni sincroniza tu cuenta de Apple Podcasts.
+
+## Estado de la versión 1.6
+
+Las funciones descritas están implementadas y disponibles en [**Onda 1.6 · Vista previa**](https://github.com/ByXuXy88/onda/releases/tag/v1.6-preview). Esta edición usa el paquete `es.jesus.ampodcasts.preview` y se instala junto a Onda 1.5, sin borrar ni modificar su biblioteca. Empieza vacía; puedes exportar el OPML de 1.5 e importarlo en la vista previa para copiar tus programas. El OPML no transfiere favoritos ni progreso.
+
+La descarga estable sigue siendo **1.5**. La publicación de un APK 1.6 que actualice directamente esa instalación está pendiente de recuperar la clave original de firma. No desinstales Onda 1.5 para probar la vista previa.
 
 ## Empieza a escuchar
 
@@ -73,6 +91,12 @@ Cada persona decide qué programas añadir. **Una instalación nueva no incluye 
 Toca el engranaje para abrir **Ajustes**. Puedes limitar las nuevas descargas a Wi-Fi y exportar la biblioteca OPML. Las descargas no usan itinerancia. El temporizador está junto a los controles del reproductor. El icono de biblioteca abre **Continuar escuchando**, **Favoritos** y **Escuchar después**; la lupa busca episodios guardados. Usa los tres puntos de cada episodio para marcarlo como escuchado, añadirlo a la cola o cambiar su orden.
 
 Si aparece la cámara, el episodio dispone de vídeo. Al cerrar su pantalla, la reproducción sigue en segundo plano. Cuando hay audio y vídeo separados, el botón de descarga guarda el audio; en podcasts solo de vídeo guarda ese archivo de vídeo.
+
+Para las novedades de 1.6, abre **Opciones de este programa** (tres puntos junto al título) o **Ajustes → Opciones de cada programa**. Las descargas y los avisos empiezan desde el estado actual del RSS, sin descargar el historial. Android determina cuándo se ejecuta la revisión de unas seis horas; no son avisos instantáneos. El límite solo gestiona descargas automáticas y conserva las manuales y el episodio activo. El borrado de escuchados se activa aparte.
+
+En **Ajustes** puedes guardar o restaurar una copia completa JSON mediante el selector de archivos de Android. La restauración sustituye el estado portátil tras comprobar el archivo y pedir confirmación, detiene la reproducción y conserva las descargas de ese dispositivo. Los archivos multimedia no forman parte de la copia.
+
+En vídeo, usa la ventana flotante o pulsa Inicio mientras reproduces. La duración publicada y los capítulos dependen del RSS; si no publica duración, se aprende al reproducir. Los capítulos compatibles usan `podcast:chapters` con JSON HTTPS. La búsqueda por idioma revisa hasta 12 RSS de candidatos y excluye programas sin idioma declarado.
 
 Las portadas de programas añadidos en versiones anteriores se recuperan al actualizar sus episodios. Si desactivas la actualización automática, usa el botón de actualizar.
 
@@ -97,7 +121,7 @@ En Linux/macOS:
 sh ./gradlew assembleDebug testDebugUnitTest lintDebug
 ```
 
-En Windows usa `gradlew.bat`. El APK aparece en `app/build/outputs/apk/debug/app-debug.apk`.
+En Windows usa `gradlew.bat`. El APK aparece en `app/build/outputs/apk/debug/app-debug.apk`; las compilaciones debug son vistas previas con paquete separado y nombre Onda · Vista previa.
 
 ### Firma para distribución
 
@@ -110,7 +134,7 @@ Para publicar actualizaciones, usa una clave privada estable que controles y man
 - `ONDA_KEY_ALIAS`: alias de la clave.
 - `ONDA_KEY_PASSWORD`: contraseña de la clave.
 
-Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. El APK de actualización personal entregado conserva la firma de las versiones anteriores; esa clave no se incluye en este proyecto público.
+Con esas variables configuradas, `sh ./gradlew assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`. Conserva la misma clave para las versiones siguientes. Las versiones personales hasta 1.5 comparten la firma original. La clave original no está en este repositorio y debe recuperarse antes de distribuir 1.6 como actualización compatible.
 
 ### Biblioteca vacía y actualización
 
