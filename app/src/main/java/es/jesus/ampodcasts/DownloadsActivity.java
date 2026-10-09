@@ -18,7 +18,7 @@ public final class DownloadsActivity extends Activity {
     }
     private void refresh() { worker.execute(() -> { List<Repository.StoredDownload> result = repository.storedDownloads(); runOnUiThread(() -> { if (!isDestroyed()) { downloads = result; render(); } }); }); }
     private void render() {
-        content.removeAllViews(); ImageButton back = new ImageButton(this); back.setImageDrawable(new ControlIcon("back", 0xffa8c7fa, dp(24))); back.setBackgroundColor(Color.TRANSPARENT); back.setContentDescription("Volver a ajustes"); back.setOnClickListener(v -> finish()); content.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        content.removeAllViews(); ImageButton back = new ImageButton(this); back.setImageDrawable(new ControlIcon("back", 0xffa8c7fa, dp(24))); back.setBackgroundColor(Color.TRANSPARENT); back.setContentDescription("Volver a la biblioteca"); back.setOnClickListener(v -> finish()); content.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
         label("Tus descargas", 28); long total = 0; for (Repository.StoredDownload d : downloads) total += d.bytes; label(downloads.size() + " descargas · " + size(total), 16);
         Button cleanup = new Button(this); cleanup.setText("Eliminar descargas escuchadas"); cleanup.setAllCaps(false); content.addView(cleanup);
         List<Repository.StoredDownload> played = new ArrayList<>(); for (Repository.StoredDownload d : downloads) if (d.played && d.status == DownloadManager.STATUS_SUCCESSFUL) played.add(d); cleanup.setEnabled(!played.isEmpty());

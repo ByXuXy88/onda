@@ -16,13 +16,15 @@ public final class PlaybackService extends MediaSessionService {
     private MediaSession session;
     private Repository repository;
     private String previousId = "";
+    private boolean initialSkipPending;
+    private String endingSkippedId = "";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChanged = (prefs, key) -> { if ("speed".equals(key) || "skipSilence".equals(key)) handler.post(this::applyPreferences); };
     private final Runnable checkpoint = new Runnable() {
         @Override public void run() {
             long deadline = repository.prefs.getLong("sleepDeadline", 0);
             if (deadline > 0 && SystemClock.elapsedRealtime() >= deadline) { player.pause(); repository.prefs.edit().remove("sleepDeadline").apply(); }
-            save(); handler.postDelayed(this, 1000);
+            applyOffsets(); save(); handler.postDelayed(this, 1000);
         }
     };
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
@@ -37,6 +39,7 @@ public final class PlaybackService extends MediaSessionService {
             @Override public void onMediaItemTransition(MediaItem item, int reason) {
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !previousId.isEmpty()) repository.setListened(previousId, true);
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
+                endingSkippedId = ""; initialSkipPending = item != null && (!repository.prefs.getBoolean("resumePlayback",true) || repository.position(item.mediaId) == 0);
                 previousId = item == null ? "" : item.mediaId; repository.prefs.edit().putString("activeEpisode", previousId).apply();
                 if (item != null) {
                     if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && repository.prefs.getBoolean("resumePlayback", true)) { long position = repository.position(item.mediaId); if (position > 0) player.seekTo(position); }
@@ -48,12 +51,14 @@ public final class PlaybackService extends MediaSessionService {
             @Override public void onIsPlayingChanged(boolean isPlaying) { save(); }
             @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
             @Override public void onPositionDiscontinuity(Player.PositionInfo oldPos, Player.PositionInfo newPos, int reason) {
+                if (reason == Player.DISCONTINUITY_REASON_SEEK) initialSkipPending = false;
                 if (oldPos.mediaItem != null) {
                     if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) repository.setListened(oldPos.mediaItem.mediaId, true);
                     else repository.savePosition(oldPos.mediaItem.mediaId, oldPos.positionMs);
                 }
             }
             @Override public void onPlaybackStateChanged(int state) {
+                if(state == Player.STATE_READY) applyOffsets();
                 if (state == Player.STATE_ENDED && !previousId.isEmpty()) repository.setListened(previousId, true);
                 if (state == Player.STATE_ENDED && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
             }
@@ -79,6 +84,13 @@ public final class PlaybackService extends MediaSessionService {
         player.setPlaybackSpeed(repository.prefs.getFloat("speed", 1f));
         player.setSkipSilenceEnabled(repository.prefs.getBoolean("skipSilence", false));
         player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().setForceHighestSupportedBitrate(true).build());
+    }
+    private void applyOffsets() {
+        MediaItem item = player.getCurrentMediaItem(); if(item==null || player.getPlaybackState()!=Player.STATE_READY || player.getDuration()<=0) return;
+        android.os.Bundle extras=item.mediaMetadata.extras; if(extras==null) return; String feed=extras.getString("feed", "");
+        long start=SkipRules.offset(repository.prefs,"skipStart",feed), end=SkipRules.offset(repository.prefs,"skipEnd",feed), duration=player.getDuration();
+        if(initialSkipPending) { initialSkipPending=false; long position=player.getCurrentPosition(); if(start+end<duration) { long target=SkipRules.initial(position,start,duration); if(target!=position) { player.seekTo(target); return; } } }
+        if(player.isPlaying() && !item.mediaId.equals(endingSkippedId) && SkipRules.finish(player.getCurrentPosition(),duration,start,end)) { endingSkippedId=item.mediaId; player.seekTo(duration); }
     }
     private void save() {
         MediaItem item = player == null ? null : player.getCurrentMediaItem();

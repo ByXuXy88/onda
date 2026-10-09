@@ -20,6 +20,12 @@ final class PlaybackTools {
         for (int i = 0; i < array.length(); i++) { JSONObject c = array.getJSONObject(i); double seconds = c.optDouble("startTime", -1); if (!c.optBoolean("toc", true) || !Double.isFinite(seconds) || seconds < 0 || seconds > 604800) continue; result.add(new Chapter(c.optString("title", "Capítulo " + (i + 1)), (long) (seconds * 1000))); }
         result.sort(Comparator.comparingLong(c -> c.start)); return result;
     }
+    static List<Chapter> load(android.content.Context context, LibraryEntry entry) throws Exception {
+        File directory=new File(context.getCacheDir(),"chapters"); directory.mkdirs(); File cache=new File(directory,Repository.key(entry.episode.chaptersUrl)+".json");
+        if(cache.isFile() && cache.length()<=2_000_000) try { return parse(new String(java.nio.file.Files.readAllBytes(cache.toPath()),java.nio.charset.StandardCharsets.UTF_8)); } catch(Exception ignored) {}
+        HttpURLConnection conn=(HttpURLConnection)new URL(Repository.normalizeFeed(entry.episode.chaptersUrl)).openConnection(); conn.setConnectTimeout(15000); conn.setReadTimeout(15000); conn.setInstanceFollowRedirects(false);
+        try { if(conn.getResponseCode()!=200) throw new IOException("Capítulos no disponibles"); try(InputStream in=conn.getInputStream()){ ByteArrayOutputStream bytes=new ByteArrayOutputStream(); byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1){bytes.write(b,0,n);if(bytes.size()>2_000_000)throw new IOException("Capítulos demasiado grandes");} String json=bytes.toString("UTF-8");List<Chapter> result=parse(json);try(FileOutputStream out=new FileOutputStream(cache)){out.write(bytes.toByteArray());}return result; } } finally {conn.disconnect();}
+    }
     static void chapters(Activity activity, MediaController controller, ExecutorService worker) {
         if (controller.getCurrentMediaItem() == null) return; String id = controller.getCurrentMediaItem().mediaId; LibraryEntry entry = new Repository(activity).entry(id);
         if (entry == null || entry.episode.chaptersUrl.isEmpty()) { Toast.makeText(activity, "Este episodio no publica capítulos en su RSS", Toast.LENGTH_LONG).show(); return; }

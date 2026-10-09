@@ -64,7 +64,7 @@ final class Repository {
         List<Podcast> list = podcasts();
         for (int n = 0; n < list.size(); n++) {
             Podcast p = list.get(n);
-            if (p.feed.equals(feed) && !p.artwork.equals(artwork)) { list.set(n, new Podcast(p.title, p.feed, artwork)); savePodcasts(list); return; }
+            if (p.feed.equals(feed) && !p.artwork.equals(artwork)) { list.set(n, new Podcast(p.title, p.feed, artwork,p.description)); savePodcasts(list); return; }
         }
     }
     void exportOpml(OutputStream out) throws Exception {
@@ -133,19 +133,26 @@ final class Repository {
         try { out.write(a.toString().getBytes(StandardCharsets.UTF_8)); f.finishWrite(out); }
         catch (Exception e) { f.failWrite(out); throw e; }
         updateArtwork(feed, result.artwork);
-        return new FeedResult(result.title, result.artwork, list);
+        List<Podcast> programs=podcasts(); for(int i=0;i<programs.size();i++){Podcast p=programs.get(i);if(p.feed.equals(feed) && !p.description.equals(result.description)){ programs.set(i,new Podcast(p.title,p.feed,p.artwork,result.description));savePodcasts(programs);break; }}
+        return new FeedResult(result.title, result.artwork, result.description, list);
     }
     static List<Episode> parse(InputStream in) throws Exception {
         return parseFeed(in).episodes;
     }
     static final class FeedResult {
-        final String title, artwork; final List<Episode> episodes;
-        FeedResult(String title, String artwork, List<Episode> episodes) { this.title = title; this.artwork = artwork; this.episodes = episodes; }
+        final String title, artwork, description; final List<Episode> episodes;
+        FeedResult(String title, String artwork, List<Episode> episodes) { this(title,artwork,"",episodes); }
+        FeedResult(String title,String artwork,String description,List<Episode> episodes){this.title=title;this.artwork=artwork;this.description=description;this.episodes=episodes;}
+    }
+    private static String descriptionText(XmlPullParser parser) throws Exception {
+        int depth=parser.getDepth();StringBuilder text=new StringBuilder();int event;
+        while((event=parser.nextToken())!=XmlPullParser.END_DOCUMENT){if(event==XmlPullParser.END_TAG && parser.getDepth()==depth)break;if(text.length()<10000){if(event==XmlPullParser.TEXT || event==XmlPullParser.CDSECT)text.append(parser.getText());else if(event==XmlPullParser.START_TAG)text.append(' ');}}
+        return text.toString();
     }
     static FeedResult parseFeed(InputStream in) throws Exception {
         XmlPullParser p = Xml.newPullParser(); p.setInput(in, null);
         List<Episode> result = new ArrayList<>();
-        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1, duration = 0; String chapters = "", episodeArtwork = "";
+        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", channelDescription = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1, duration = 0; String chapters = "", episodeArtwork = "";
         for (int event = p.getEventType(); event != XmlPullParser.END_DOCUMENT; event = p.nextToken()) {
             if (event == XmlPullParser.DOCDECL) throw new IOException("Fuente XML no válida");
             if (event == XmlPullParser.START_TAG) {
@@ -157,6 +164,7 @@ final class Repository {
                 }
                 else if (!item && channelImage && name.equals("url")) rssArtwork = Podcast.artworkUrl(p.nextText());
                 else if (!item && !channelImage && name.equals("title") && channelTitle.isEmpty()) channelTitle = p.nextText();
+                else if (!item && !channelImage && (name.equals("description") || name.equals("itunes:summary")) && channelDescription.isEmpty()) { String raw=descriptionText(p); channelDescription=android.text.Html.fromHtml(raw,android.text.Html.FROM_HTML_MODE_LEGACY).toString().trim(); if(channelDescription.length()>5000)channelDescription=channelDescription.substring(0,5000); }
                 else if (item) {
                     if (name.equals("image") || name.equals("itunes:image") || name.equals("media:thumbnail")) { String href = p.getAttributeValue(null, "href"); if (href == null) href = p.getAttributeValue(null, "url"); if (href != null) episodeArtwork = Podcast.artworkUrl(href); }
                     else if (name.equals("title")) title = p.nextText();
@@ -182,7 +190,7 @@ final class Repository {
                 item = false;
             }
         }
-        return new FeedResult(channelTitle.isEmpty() ? "Podcast" : channelTitle, artwork.isEmpty() ? rssArtwork : artwork, result);
+        return new FeedResult(channelTitle.isEmpty() ? "Podcast" : channelTitle, artwork.isEmpty() ? rssArtwork : artwork, channelDescription, result);
     }
     private static long mediaQuality(XmlPullParser parser) {
         try { String rate = parser.getAttributeValue(null, "bitrate"); if (rate != null) return Math.min(1_000_000_000L, Math.max(0, Long.parseLong(rate))); } catch (Exception ignored) { }

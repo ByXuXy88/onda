@@ -8,8 +8,8 @@ import java.util.*;
 
 final class BackupStore {
     static boolean allowed(String key) {
-        return Arrays.asList("podcasts", "queue", "selectedFeed", "last", "libraryInitialized", "speed", "skipSilence", "resumePlayback", "wifiOnly", "autoRefresh", "oldestFirst", "hideListened", "textScale", "videoPip", "deletePlayedDownloads").contains(key)
-            || key.matches("(pos|played|favorite|entry|touched|duration|auto|notify|limit):[a-f0-9]{64}");
+        return Arrays.asList("podcasts", "queue", "selectedFeed", "last", "libraryInitialized", "speed", "skipSilence", "resumePlayback", "wifiOnly", "autoRefresh", "oldestFirst", "hideListened", "textScale", "videoPip", "deletePlayedDownloads", "dynamicColors", "jumpBack", "jumpForward").contains(key)
+            || key.matches("(pos|played|favorite|entry|touched|duration|auto|notify|limit|skipStart|skipEnd|marks):[a-f0-9]{64}");
     }
     static void export(Context context, OutputStream out) throws Exception {
         JSONObject values = new JSONObject(); for (Map.Entry<String, ?> e : new Repository(context).prefs.getAll().entrySet()) if (allowed(e.getKey())) values.put(e.getKey(), e.getValue());
@@ -29,16 +29,17 @@ final class BackupStore {
     }
     private static LibraryEntry checkedEntry(JSONObject json) throws Exception { LibraryEntry entry = LibraryEntry.from(json); Repository.normalizeFeed(entry.podcast.feed); Repository.normalizeFeed(entry.episode.url); if (!entry.episode.videoUrl.isEmpty()) Repository.normalizeFeed(entry.episode.videoUrl); if (!entry.episode.chaptersUrl.isEmpty()) Repository.normalizeFeed(entry.episode.chaptersUrl); if (entry.episode.id.isEmpty()) throw new IOException("Episodio sin identificador"); return entry; }
     private static void validateValue(String key, Object value) throws Exception {
-        boolean string = Arrays.asList("podcasts", "queue", "selectedFeed", "last").contains(key) || key.startsWith("entry:");
-        boolean number = key.equals("speed") || key.equals("textScale") || key.startsWith("pos:") || key.startsWith("touched:") || key.startsWith("duration:") || key.startsWith("limit:");
+        boolean string = Arrays.asList("podcasts", "queue", "selectedFeed", "last").contains(key) || key.startsWith("entry:") || key.startsWith("marks:");
+        boolean number = key.equals("speed") || key.equals("textScale") || key.startsWith("pos:") || key.startsWith("touched:") || key.startsWith("duration:") || key.startsWith("limit:") || key.startsWith("skipStart:") || key.startsWith("skipEnd:") || key.equals("jumpBack") || key.equals("jumpForward");
         if (string ? !(value instanceof String) : number ? !(value instanceof Number) : !(value instanceof Boolean)) throw new IOException("Tipo de ajuste no válido");
-        if (number) { double n = ((Number) value).doubleValue(); if (!Double.isFinite(n) || n < 0) throw new IOException("Valor no válido"); if (key.equals("speed") && (n < .5 || n > 3) || key.equals("textScale") && (n < 1 || n > 1.3) || key.startsWith("limit:") && (n < 1 || n > 10)) throw new IOException("Ajuste fuera de rango"); }
+        if (key.startsWith("marks:")) { JSONArray marks=new JSONArray((String)value); if(marks.length()>200 || BookmarkStore.parse((String)value).size()!=marks.length()) throw new IOException("Marcas no válidas"); }
+        if (number) { double n = ((Number) value).doubleValue(); if (!Double.isFinite(n) || n < 0) throw new IOException("Valor no válido"); if (key.equals("speed") && (n < .5 || n > 3) || key.equals("textScale") && (n < 1 || n > 1.3) || key.startsWith("limit:") && (n < 1 || n > 10)) throw new IOException("Ajuste fuera de rango"); if ((key.startsWith("skipStart:") || key.startsWith("skipEnd:")) && (n>1800 || n!=Math.floor(n)) || (key.equals("jumpBack") || key.equals("jumpForward")) && n!=10 && n!=15 && n!=30 && n!=60) throw new IOException("Salto fuera de rango"); }
     }
     static void restore(Context context, Map<String, Object> values) throws Exception {
         Repository r = new Repository(context); SharedPreferences.Editor edit = r.prefs.edit();
         // Replace portable state; keep this device's downloads and discard runtime-only state.
         for (String key : r.prefs.getAll().keySet()) if (allowed(key) || key.startsWith("seen:") || key.startsWith("pending:") || key.startsWith("sleep") || key.equals("activeEpisode")) edit.remove(key);
-        for (Map.Entry<String, Object> e : values.entrySet()) { String key = e.getKey(); Object value = e.getValue(); if (value instanceof String) edit.putString(key, (String) value); else if (value instanceof Boolean) edit.putBoolean(key, (Boolean) value); else if (key.equals("speed") || key.equals("textScale")) edit.putFloat(key, ((Number) value).floatValue()); else if (key.startsWith("limit:")) edit.putInt(key, ((Number) value).intValue()); else edit.putLong(key, ((Number) value).longValue()); }
+        for (Map.Entry<String, Object> e : values.entrySet()) { String key = e.getKey(); Object value = e.getValue(); if (value instanceof String) edit.putString(key, (String) value); else if (value instanceof Boolean) edit.putBoolean(key, (Boolean) value); else if (key.equals("speed") || key.equals("textScale")) edit.putFloat(key, ((Number) value).floatValue()); else if (key.startsWith("limit:") || key.equals("jumpBack") || key.equals("jumpForward")) edit.putInt(key, ((Number) value).intValue()); else edit.putLong(key, ((Number) value).longValue()); }
         edit.putBoolean("libraryInitialized", true); if (!edit.commit()) throw new IOException("No se pudo restaurar la copia");
         for (Podcast p : r.podcasts()) BackgroundSync.initialize(context, p.feed); BackgroundSync.schedule(context);
     }

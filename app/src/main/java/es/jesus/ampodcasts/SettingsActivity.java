@@ -31,6 +31,9 @@ public final class SettingsActivity extends Activity {
         speed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() { public void onNothingSelected(AdapterView<?> p) {} public void onItemSelected(AdapterView<?> p, View v, int index, long id) { repository.prefs.edit().putFloat("speed", values[index]).apply(); } });
         option("skipSilence", "Omitir silencios", "Acorta las pausas del audio durante la reproducción.", false);
         option("resumePlayback", "Recordar dónde lo dejaste", "Reanuda cada episodio desde su última posición.", true);
+        action("Saltos de avance y retroceso", () -> new AlertDialog.Builder(this).setTitle("Elige el control").setItems(new String[]{"Retroceder", "Avanzar"}, (d, side) -> new AlertDialog.Builder(this).setTitle("Segundos por pulsación").setItems(new String[]{"10 segundos", "15 segundos", "30 segundos", "60 segundos"}, (dialog, index) -> repository.prefs.edit().putInt(side==0 ? "jumpBack" : "jumpForward", new int[]{10,15,30,60}[index]).apply()).show()).show());
+        title("Apariencia", 18);
+        option("dynamicColors", "Colores del sistema", "En Android 12 o posterior, adapta el acento al fondo del móvil. El fondo sigue siendo negro OLED.", true);
         title("Descargas y biblioteca", 18);
         option("wifiOnly", "Descargar solo por Wi‑Fi", "Se aplica a las nuevas descargas. Las que ya están en curso conservan su configuración.", false);
         option("autoRefresh", "Actualizar al abrir un programa", "Busca nuevos episodios cuando abres Onda o cambias de podcast.", true);
