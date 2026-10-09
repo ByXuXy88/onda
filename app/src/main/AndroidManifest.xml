@@ -15,6 +15,7 @@
             <intent-filter><action android:name="androidx.media3.session.MediaSessionService" /></intent-filter>
         </service>
         <activity android:name=".SettingsActivity" android:exported="false" />
+        <activity android:name=".GeminiAdsActivity" android:exported="false" android:configChanges="orientation|screenSize" />
         <activity android:name=".DownloadsActivity" android:exported="false" />
         <activity android:name=".VideoActivity" android:exported="false" android:supportsPictureInPicture="true" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
         <activity android:name=".DiscoverActivity" android:exported="false" />
