@@ -21,7 +21,7 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 ## Beta experimental · Gemini
 
-[**Onda 1.9.0-beta.4**](https://github.com/ByXuXy88/onda/releases/tag/v1.9.0-beta.4) añade análisis opcional de anuncios con la clave API personal de Gemini. La versión estable sigue siendo **1.8.3**.
+[**Onda 1.9.0-beta.5**](https://github.com/ByXuXy88/onda/releases/tag/v1.9.0-beta.5) añade análisis opcional de anuncios con la clave API personal de Gemini. La versión estable sigue siendo **1.8.3**.
 
 1. Instala **Onda-beta.apk** sobre Onda, sin desinstalarla. Conserva el paquete, la firma y los datos; Android no permite volver a instalar una versión con un código de versión inferior sobre esta beta.
 2. Abre **Ajustes → Saltar anuncios · Gemini Beta**. Añade tu clave API y elige un modelo que admita audio entre los disponibles para tu cuenta, o escribe su identificador.
@@ -42,11 +42,11 @@ Al completar el análisis, los tramos quedan guardados y **se saltan automática
 
 La beta acepta claves con punto como `AQ.A…`, además de las claves anteriores, y diferencia los errores de formato, cifrado y almacenamiento sin mostrar la clave.
 
-La clave se cifra mediante Android Keystore y se excluye de las copias de seguridad. Los resultados son locales y tampoco forman parte de la copia portátil. La preparación reproduce **exactamente el archivo analizado**, conservado en la caché privada temporal; nunca aplica esos tiempos a una segunda transmisión RSS, que podría insertar anuncios distintos. La caché intenta mantener hasta **3 archivos dentro de 512 MB** y conserva el audio activo; puedes borrar el resto desde los ajustes de Gemini. Android puede liberar la caché, y entonces será necesario preparar otra vez el episodio. El audio temporal no aparece en Descargas ni se exporta. No se utiliza el micrófono.
+La clave se cifra mediante Android Keystore y se excluye de las copias de seguridad. Los resultados son locales y tampoco forman parte de la copia portátil. La preparación reproduce **exactamente el archivo analizado**, conservado en la caché privada temporal; nunca aplica esos tiempos a una segunda transmisión RSS, que podría insertar anuncios distintos. La caché conserva los episodios analizados pendientes, aunque haya más de tres. Al alcanzar el final de reproducción borra únicamente el audio temporal de ese episodio; conserva los resultados y las descargas manuales. Puedes liberar la caché desde los ajustes de Gemini. Los nuevos episodios requieren espacio libre suficiente; no se borran los pendientes para hacer sitio. Android puede liberar la caché, y entonces será necesario preparar otra vez el episodio. El audio temporal no aparece en Descargas ni se exporta. No se utiliza el micrófono.
 
 La beta admite audio de hasta **512 MB y 9 horas**, sujeto también a los límites del modelo y de la cuenta. No analiza directos ni vídeo separado. El modo automático está desactivado inicialmente y solo analiza episodios seleccionados para escuchar, incluida la cola; no analiza todo el catálogo al actualizar el RSS. La autorización se solicita al activarlo y se puede retirar en Ajustes. Mientras prepara el episodio, mantiene una notificación de progreso y cancelación, también con la pantalla apagada. Android puede interrumpir el trabajo; el proceso no se reanuda solo después de cerrar o reiniciar la app. Cancelar no revierte el consumo de solicitudes ya enviadas. Un fallo conserva el análisis anterior y nunca inicia la escucha con resultados parciales. La preparación tiene un límite de 30 minutos.
 
-La beta 4 conserva las pruebas de espera, caché, cancelación y cola, y añade validación de capítulos y subtemas, conservación de resultados al deshacer, identidad del audio en el reproductor y recomendaciones con historial opcional. Los nuevos capítulos generados y la calidad de las sugerencias deben comprobarse en un móvil con contenido real.
+La beta 5 conserva las pruebas de espera, caché, cancelación y cola, y añade validación de capítulos y subtemas, conservación de resultados al deshacer, identidad del audio en el reproductor y recomendaciones con historial opcional. Los nuevos capítulos generados y la calidad de las sugerencias deben comprobarse en un móvil con contenido real.
 
 La integración usa la API oficial de Gemini, con subida temporal mediante Files API y respuesta JSON validada. Onda intenta borrar su archivo temporal de Google al terminar o fallar; si no puede hacerlo, Files API lo elimina automáticamente tras 48 horas. No hay servidor de Onda ni integración con SponsorBlock en esta beta.
 
@@ -214,3 +214,7 @@ Los podcasts y sus derechos pertenecen a sus respectivos editores. Onda no es un
 ## Inspiración y créditos
 
 Algunos elementos visuales de los controles de reproducción de Onda están inspirados en [Phonograph Plus](https://github.com/chr56/Phonograph_Plus), especialmente su estilo Material. El resto del diseño y las funciones de Onda se han desarrollado de forma independiente. Gracias a chr56 y a quienes contribuyen al proyecto. Esta adaptación utiliza controles propios y no incorpora código ni recursos de Phonograph Plus.
+
+### Ajustes de la beta 5
+
+Los episodios preparados pendientes se conservan hasta alcanzar el final. Pausar, cambiar de episodio o cerrar Onda no los elimina. La caché sigue siendo temporal y Android puede liberarla. Escuchar de nuevo un episodio cuyo audio se haya borrado requiere otra preparación para vincular los tramos al archivo exacto. Los controles de Descubrir, Descargas, Ajustes y Gemini comparten superficies OLED y acentos; el reproductor usa botones visualmente más pequeños y mantiene áreas táctiles de al menos 48 dp.
