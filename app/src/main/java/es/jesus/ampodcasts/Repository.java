@@ -125,7 +125,7 @@ final class Repository {
             try (InputStream in = conn.getInputStream()) { result = parseFeed(in); }
         } finally { conn.disconnect(); }
         List<Episode> list = new ArrayList<>();
-        for (Episode e : result.episodes) list.add(new Episode(episodeId(e.id), e.title, e.date, e.url, e.videoUrl, e.durationMs, e.chaptersUrl, e.artwork));
+        for (Episode e : result.episodes) list.add(new Episode(episodeId(e.id), e.title, e.date, e.url, e.videoUrl, e.durationMs, e.chaptersUrl, e.artwork,e.transcriptUrl,e.transcriptType));
         if (list.isEmpty()) throw new IOException("La fuente no contiene episodios reproducibles");
         JSONArray a = new JSONArray(); for (Episode e : list) a.put(e.json());
         AtomicFile f = new AtomicFile(cacheFile());
@@ -152,12 +152,12 @@ final class Repository {
     static FeedResult parseFeed(InputStream in) throws Exception {
         XmlPullParser p = Xml.newPullParser(); p.setInput(in, null);
         List<Episode> result = new ArrayList<>();
-        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", channelDescription = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1, duration = 0; String chapters = "", episodeArtwork = "";
+        String title = "", date = "", id = "", url = "", videoUrl = "", channelTitle = "", channelDescription = "", artwork = "", rssArtwork = ""; boolean item = false, channelImage = false; long audioQuality = -1, videoQuality = -1, duration = 0; String chapters = "", episodeArtwork = "", transcriptUrl="", transcriptType="";
         for (int event = p.getEventType(); event != XmlPullParser.END_DOCUMENT; event = p.nextToken()) {
             if (event == XmlPullParser.DOCDECL) throw new IOException("Fuente XML no válida");
             if (event == XmlPullParser.START_TAG) {
                 String name = p.getName();
-                if (name.equals("item")) { item = true; title = date = id = url = videoUrl = ""; audioQuality = videoQuality = -1; duration = 0; chapters = episodeArtwork = ""; }
+                if (name.equals("item")) { item = true; title = date = id = url = videoUrl = ""; audioQuality = videoQuality = -1; duration = 0; chapters = episodeArtwork = transcriptUrl = transcriptType = ""; }
                 else if (!item && (name.equals("image") || name.equals("itunes:image"))) {
                     String href = p.getAttributeValue(null, "href");
                     if (href != null) artwork = Podcast.artworkUrl(href); else channelImage = true;
@@ -172,6 +172,7 @@ final class Repository {
                     else if (name.equals("guid")) id = p.nextText();
                     else if (name.equals("itunes:duration") || name.equals("duration")) duration = TimeFormat.parse(p.nextText());
                     else if (name.equals("podcast:chapters") || name.equals("chapters")) { String u = p.getAttributeValue(null, "url"); if (u != null) try { chapters = normalizeFeed(u); } catch (Exception ignored) { } }
+                    else if (name.equals("podcast:transcript") || name.equals("transcript")) { String u=p.getAttributeValue(null,"url"), t=p.getAttributeValue(null,"type"); if(transcriptUrl.isEmpty() && u!=null && t!=null && TranscriptStore.supported(t))try{transcriptUrl=normalizeFeed(u);transcriptType=t;}catch(Exception ignored){} }
                     else if (name.equals("enclosure") || name.equals("media:content") || name.equals("content")) {
                         String u = p.getAttributeValue(null, "url"); if (u == null || !u.startsWith("https://")) continue;
                         String type = p.getAttributeValue(null, "type"), medium = p.getAttributeValue(null, "medium");
@@ -186,7 +187,7 @@ final class Repository {
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("image")) { channelImage = false;
             } else if (event == XmlPullParser.END_TAG && p.getName().equals("item")) {
                 if (url.isEmpty()) url = videoUrl;
-                if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url, videoUrl, duration, chapters, episodeArtwork));
+                if (!title.isEmpty() && url.startsWith("https://")) result.add(new Episode(id.isEmpty() ? url : id, title, date, url, videoUrl, duration, chapters, episodeArtwork,transcriptUrl,transcriptType));
                 item = false;
             }
         }
@@ -281,6 +282,16 @@ final class Repository {
             .setDestinationInExternalFilesDir(context, "episodes", key(e.id) + "-" + System.currentTimeMillis() + (e.url.equals(e.videoUrl) ? ".mp4" : ".audio"));
         long id = downloads.enqueue(r); prefs.edit().putLong("download:" + key(e.id), id).putBoolean("automatic:" + key(e.id), automatic).apply();
     }
+    long automaticDownloadBytes() {
+        long bytes=0;
+        for(StoredDownload download:storedDownloads()) {
+            boolean automatic=false;
+            for(Map.Entry<String,?> item:prefs.getAll().entrySet())if(item.getKey().startsWith("download:") && item.getValue() instanceof Long && (Long)item.getValue()==download.id)automatic=prefs.getBoolean("automatic:"+item.getKey().substring(9),false);
+            if(automatic && download.status!=DownloadManager.STATUS_FAILED)bytes+=download.status==DownloadManager.STATUS_SUCCESSFUL?download.bytes:Math.max(download.bytes,128_000_000L);
+        }
+        return bytes;
+    }
+    boolean automaticSpaceAvailable() {long limit=prefs.getLong("automaticBudget",1_000_000_000L);return limit==0 || automaticDownloadBytes()+128_000_000L<=limit;}
     long duration(Episode e) { return prefs.getLong("duration:" + key(e.id), e.durationMs); }
     LibraryEntry entry(String id) { try { return LibraryEntry.from(new org.json.JSONObject(prefs.getString("entry:" + key(id), ""))); } catch (Exception ignored) { return null; } }
     void removeDownload(Episode e) { long id = downloadId(e); if (id >= 0) downloads.remove(id); prefs.edit().remove("download:" + key(e.id)).apply(); }

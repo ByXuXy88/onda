@@ -32,6 +32,8 @@ public final class SettingsActivity extends Activity {
         option("skipSilence", "Omitir silencios", "Acorta las pausas del audio durante la reproducción.", false);
         option("resumePlayback", "Recordar dónde lo dejaste", "Reanuda cada episodio desde su última posición.", true);
         action("Saltos de avance y retroceso", () -> new AlertDialog.Builder(this).setTitle("Elige el control").setItems(new String[]{"Retroceder", "Avanzar"}, (d, side) -> new AlertDialog.Builder(this).setTitle("Segundos por pulsación").setItems(new String[]{"10 segundos", "15 segundos", "30 segundos", "60 segundos"}, (dialog, index) -> repository.prefs.edit().putInt(side==0 ? "jumpBack" : "jumpForward", new int[]{10,15,30,60}[index]).apply()).show()).show());
+        option("sleepFade", "Bajar volumen antes de dormir", "Reduce el volumen durante los últimos 30 segundos del temporizador. Al pausar vuelve al volumen normal.", true);
+        action("Modo coche", () -> startActivity(new Intent(this, MainActivity.class).putExtra("carMode",true)));
         title("Apariencia", 18);
         action("Saltar anuncios · Gemini Beta", () -> startActivity(new Intent(this, GeminiAdsActivity.class)));
         option("dynamicColors", "Colores del sistema", "En Android 12 o posterior, adapta el acento al fondo del móvil. El fondo sigue siendo negro OLED.", true);
@@ -41,6 +43,8 @@ public final class SettingsActivity extends Activity {
         option("autoRefresh", "Actualizar al abrir un programa", "Busca nuevos episodios cuando abres Onda o cambias de podcast.", true);
         option("oldestFirst", "Episodios antiguos primero", "Invierte el orden del RSS para escuchar desde el principio.", false);
         option("hideListened", "Ocultar episodios escuchados", "Se aplica a la lista de episodios del programa. Tus favoritos se conservan.", false);
+        action("Límite de descargas automáticas", () -> new AlertDialog.Builder(this).setTitle("Espacio para descargas automáticas").setItems(new String[]{"500 MB","1 GB","2 GB","5 GB","Sin límite"},(d,index)->repository.prefs.edit().putLong("automaticBudget",new long[]{500_000_000L,1_000_000_000L,2_000_000_000L,5_000_000_000L,0}[index]).apply()).setNegativeButton("Cerrar",null).show());
+        text("Por defecto: 1 GB. Al acercarse al límite se aplazan las nuevas descargas automáticas; no se borran archivos para liberar espacio. Se reservan 128 MB por descarga en curso; un archivo mayor puede superar el límite. Las descargas manuales son independientes.",13);
         action("Gestionar espacio de descargas", () -> startActivity(new Intent(this, DownloadsActivity.class)));
         option("deletePlayedDownloads", "Borrar descargas ya escuchadas", "Elimina periódicamente archivos terminados; conserva el episodio activo. Configura descargas automáticas y avisos desde las opciones de cada programa.", false);
         action("Opciones de cada programa", () -> { java.util.List<Podcast> programs = repository.podcasts(); String[] labels = new String[programs.size()]; for (int i = 0; i < labels.length; i++) labels[i] = programs.get(i).title; if (labels.length == 0) Toast.makeText(this, "Añade primero un podcast", Toast.LENGTH_SHORT).show(); else new AlertDialog.Builder(this).setTitle("Elige un programa").setItems(labels, (d, w) -> ProgramOptions.show(this, programs.get(w).feed)).show(); });

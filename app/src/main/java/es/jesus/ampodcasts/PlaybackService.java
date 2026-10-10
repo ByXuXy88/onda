@@ -34,12 +34,16 @@ public final class PlaybackService extends MediaSessionService {
     private String endingSkippedId = "";
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final SharedPreferences.OnSharedPreferenceChangeListener geminiChanged=(prefs,key)->{if(GeminiPreparation.ENABLED.equals(key))handler.post(()->{if(!GeminiPreparation.enabled(this)){cancelPreparation("Preparación automática desactivada");}else if(player!=null && player.getMediaItemCount()>1){int index=player.getCurrentMediaItemIndex();if(index+1<player.getMediaItemCount())player.removeMediaItems(index+1,player.getMediaItemCount());}});};
-    private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChanged = (prefs, key) -> { if ("speed".equals(key) || "skipSilence".equals(key) || "jumpBack".equals(key) || "jumpForward".equals(key)) handler.post(this::applyPreferences); };
+    private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChanged = (prefs, key) -> { if ("speed".equals(key) || "skipSilence".equals(key) || "jumpBack".equals(key) || "jumpForward".equals(key) || key.startsWith("programSpeed:") || key.startsWith("programSilence:")) handler.post(this::applyPreferences); if(key.startsWith("sleep")) handler.post(()->{if(player!=null)player.setVolume(1f);}); };
     private final Recommendations.Tracker recommendationTracker=new Recommendations.Tracker();
     private final Runnable checkpoint = new Runnable() {
         @Override public void run() {
             long deadline = repository.prefs.getLong("sleepDeadline", 0);
             if (deadline > 0 && SystemClock.elapsedRealtime() >= deadline) { cancelPreparation("Temporizador finalizado: preparación cancelada");player.pause(); repository.prefs.edit().remove("sleepDeadline").apply(); }
+            long remaining = deadline > 0 ? deadline - SystemClock.elapsedRealtime() : -1;
+            String sleepId=repository.prefs.getString("sleepEpisode","");
+            if (!sleepId.isEmpty() && player.getCurrentMediaItem()!=null && sleepId.equals(player.getCurrentMediaItem().mediaId) && player.getDuration()>0) remaining=Math.max(0,player.getDuration()-player.getCurrentPosition());
+            player.setVolume(player.isPlaying()?ListeningPreferences.sleepVolume(remaining,repository.prefs.getBoolean("sleepFade",true)):1f);
             MediaItem current=player.getCurrentMediaItem();recommendationTracker.tick(PlaybackService.this,repository,current==null?"":current.mediaId,current==null || current.localConfiguration==null?null:current.localConfiguration.uri,player.isPlaying(),SystemClock.elapsedRealtime());
             applyOffsets(); applyAdSkips(); save(); handler.postDelayed(this, 1000);
         }
@@ -75,7 +79,7 @@ public final class PlaybackService extends MediaSessionService {
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && !previousId.isEmpty()) repository.setListened(previousId, true);
                 if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
                 endingSkippedId = ""; initialSkipPending = item != null && (!repository.prefs.getBoolean("resumePlayback",true) || repository.position(item.mediaId) == 0);
-                previousId = item == null ? "" : item.mediaId; repository.prefs.edit().putString("activeEpisode", previousId).apply();
+                previousId = item == null ? "" : item.mediaId; applyPreferences(); repository.prefs.edit().putString("activeEpisode", previousId).apply();
                 if (item != null) {
                     if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO && repository.prefs.getBoolean("resumePlayback", true)) { long position = repository.position(item.mediaId); if (position > 0) player.seekTo(position); }
                     repository.prefs.edit().putLong("touched:" + Repository.key(item.mediaId), System.currentTimeMillis()).apply();
@@ -83,7 +87,7 @@ public final class PlaybackService extends MediaSessionService {
                 }
                 save();
             }
-            @Override public void onIsPlayingChanged(boolean isPlaying) { save(); }
+            @Override public void onIsPlayingChanged(boolean isPlaying) { if(!isPlaying)player.setVolume(1f); save(); }
             @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)
             @Override public void onPositionDiscontinuity(Player.PositionInfo oldPos, Player.PositionInfo newPos, int reason) {
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) initialSkipPending = false;
@@ -179,8 +183,10 @@ public final class PlaybackService extends MediaSessionService {
     private void applyPreferences() {
         if (player == null) return;
         if (session != null) session.setMediaButtonPreferences(notificationButtons());
-        player.setPlaybackSpeed(repository.prefs.getFloat("speed", 1f));
-        player.setSkipSilenceEnabled(repository.prefs.getBoolean("skipSilence", false));
+        LibraryEntry current = player.getCurrentMediaItem()==null ? null : repository.entry(player.getCurrentMediaItem().mediaId);
+        String feed = current==null ? "" : current.podcast.feed;
+        player.setPlaybackSpeed(ListeningPreferences.speed(repository.prefs,feed));
+        player.setSkipSilenceEnabled(ListeningPreferences.silence(repository.prefs,feed));
         player.setTrackSelectionParameters(player.getTrackSelectionParameters().buildUpon().setForceHighestSupportedBitrate(true).build());
     }
     @androidx.annotation.OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)

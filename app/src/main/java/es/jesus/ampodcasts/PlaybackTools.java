@@ -11,9 +11,10 @@ import java.util.concurrent.ExecutorService;
 
 final class PlaybackTools {
     static final class Chapter { final String title; final long start; Chapter(String title, long start) { this.title = title; this.start = start; } }
-    static void speed(Activity activity) {
-        float[] speeds = {.75f, 1f, 1.25f, 1.5f, 1.75f, 2f}; Repository r = new Repository(activity); int selected = 1; for (int i = 0; i < speeds.length; i++) if (speeds[i] == r.prefs.getFloat("speed", 1f)) selected = i;
-        new AlertDialog.Builder(activity).setTitle("Velocidad").setSingleChoiceItems(new String[]{"0,75×", "1×", "1,25×", "1,5×", "1,75×", "2×"}, selected, (d, which) -> { r.prefs.edit().putFloat("speed", speeds[which]).apply(); d.dismiss(); }).setNegativeButton("Cerrar", null).show();
+    static void speed(Activity activity) { speed(activity, ""); }
+    static void speed(Activity activity, String feed) {
+        float[] speeds = {.75f, 1f, 1.25f, 1.5f, 1.75f, 2f}; Repository r = new Repository(activity); int selected = 1; for (int i = 0; i < speeds.length; i++) if (speeds[i] == ListeningPreferences.speed(r.prefs,feed)) selected = i;
+        new AlertDialog.Builder(activity).setTitle(feed.isEmpty()?"Velocidad general":"Velocidad de este podcast").setSingleChoiceItems(new String[]{"0,75×", "1×", "1,25×", "1,5×", "1,75×", "2×"}, selected, (d, which) -> { r.prefs.edit().putFloat(feed.isEmpty()?"speed":ProgramOptions.key("programSpeed",feed), speeds[which]).apply(); d.dismiss(); }).setNegativeButton("Cerrar", null).setNeutralButton(feed.isEmpty()?null:"Usar ajuste general",(d,w)->r.prefs.edit().remove(ProgramOptions.key("programSpeed",feed)).apply()).show();
     }
     static List<Chapter> parse(String json) throws Exception {
         JSONArray array = new JSONObject(json).getJSONArray("chapters"); if (array.length() > 1000) throw new IOException("Demasiados capítulos"); List<Chapter> result = new ArrayList<>();
