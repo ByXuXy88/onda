@@ -15,6 +15,7 @@ public final class DiscoverActivity extends Activity {
         root.setOnApplyWindowInsetsListener((v, insets) -> { v.setPadding(pad + insets.getSystemWindowInsetLeft(), pad + insets.getSystemWindowInsetTop(), pad + insets.getSystemWindowInsetRight(), pad + insets.getSystemWindowInsetBottom()); return insets; }); setContentView(root);
         ImageButton back = new ImageButton(this); back.setImageDrawable(new ControlIcon("back", 0xffa8c7fa, pad * 3 / 2)); back.setContentDescription("Volver a la biblioteca"); back.setOnClickListener(v -> finish()); root.addView(back, new LinearLayout.LayoutParams(pad * 3, pad * 3));
         TextView title = new TextView(this); title.setText("Descubrir podcasts"); title.setTextSize(26); title.setTextColor(0xffa8c7fa); root.addView(title);
+        Button personal=new Button(this);personal.setText("Para ti · Recomendaciones");personal.setAllCaps(false);personal.setMinHeight(pad*3);personal.setOnClickListener(v->startActivity(new android.content.Intent(this,RecommendationsActivity.class)));root.addView(personal);
         Spinner language = spinner(root, new String[]{"Español", "Inglés", "Francés", "Alemán", "Italiano", "Portugués"}, "Idioma del podcast");
         Spinner category = spinner(root, new String[]{"Todas las categorías", "Noticias", "Tecnología", "Historia", "Educación", "Comedia", "Arte", "Sociedad y cultura"}, "Categoría");
         String[] languages = {"es", "en", "fr", "de", "it", "pt"}, categories = {"", "1489", "1318", "1487", "1304", "1303", "1301", "1324"};

@@ -18,6 +18,7 @@ final class LibraryEntry {
         MediaMetadata metadata = new MediaMetadata.Builder().setTitle(episode.title).setArtist(podcast.title).setAlbumTitle(podcast.title)
             .setArtworkUri(artwork().isEmpty() ? null : android.net.Uri.parse(artwork())).setExtras(extras).build();
         android.net.Uri uri = video && !episode.videoUrl.isEmpty() && !episode.url.equals(episode.videoUrl) ? android.net.Uri.parse(episode.videoUrl) : repository.playbackUri(episode);
+        extras.putString("audioBinding",Repository.key(uri.toString()));metadata=metadata.buildUpon().setExtras(extras).build();
         return new MediaItem.Builder().setMediaId(episode.id).setUri(uri).setMediaMetadata(metadata).build();
     }
 }

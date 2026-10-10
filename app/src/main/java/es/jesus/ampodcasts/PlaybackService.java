@@ -35,10 +35,12 @@ public final class PlaybackService extends MediaSessionService {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final SharedPreferences.OnSharedPreferenceChangeListener geminiChanged=(prefs,key)->{if(GeminiPreparation.ENABLED.equals(key))handler.post(()->{if(!GeminiPreparation.enabled(this)){cancelPreparation("Preparación automática desactivada");}else if(player!=null && player.getMediaItemCount()>1){int index=player.getCurrentMediaItemIndex();if(index+1<player.getMediaItemCount())player.removeMediaItems(index+1,player.getMediaItemCount());}});};
     private final SharedPreferences.OnSharedPreferenceChangeListener preferencesChanged = (prefs, key) -> { if ("speed".equals(key) || "skipSilence".equals(key) || "jumpBack".equals(key) || "jumpForward".equals(key)) handler.post(this::applyPreferences); };
+    private final Recommendations.Tracker recommendationTracker=new Recommendations.Tracker();
     private final Runnable checkpoint = new Runnable() {
         @Override public void run() {
             long deadline = repository.prefs.getLong("sleepDeadline", 0);
             if (deadline > 0 && SystemClock.elapsedRealtime() >= deadline) { cancelPreparation("Temporizador finalizado: preparación cancelada");player.pause(); repository.prefs.edit().remove("sleepDeadline").apply(); }
+            MediaItem current=player.getCurrentMediaItem();recommendationTracker.tick(PlaybackService.this,repository,current==null?"":current.mediaId,current==null || current.localConfiguration==null?null:current.localConfiguration.uri,player.isPlaying(),SystemClock.elapsedRealtime());
             applyOffsets(); applyAdSkips(); save(); handler.postDelayed(this, 1000);
         }
     };
@@ -137,15 +139,16 @@ public final class PlaybackService extends MediaSessionService {
                 if(expected!=preparationGeneration || destroyed || !preparing)return;
                 MediaItem selected=player.getCurrentMediaItem();if(selected==null || !selected.mediaId.equals(id)){cancelPreparation("");return;}
                 finishPreparation();preparationStatus(id,"Análisis completo. Iniciando el episodio con los saltos preparados.",false);
-                long position=player.getCurrentPosition();player.setMediaItem(selected.buildUpon().setUri(uri).build(),position);startReadyPlayback();
+                long position=player.getCurrentPosition();player.setMediaItem(boundAudio(selected,uri),position);startReadyPlayback();
             });}catch(Exception error){handler.post(()->{if(expected!=preparationGeneration || destroyed)return;finishPreparation();String message=error instanceof java.io.InterruptedIOException?"Preparación cancelada":error instanceof java.io.IOException?error.getMessage():"No se pudo completar la preparación. Comprueba la clave, el modelo y la conexión.";preparationStatus(id,message,false);});}});
         }catch(Exception error){finishPreparation();preparationStatus(id,"Android no permitió iniciar la preparación. Abre Onda y pulsa Play para reintentar.",false);}
     }
+    private MediaItem boundAudio(MediaItem item,android.net.Uri uri){android.os.Bundle extras=item.mediaMetadata.extras==null?new android.os.Bundle():new android.os.Bundle(item.mediaMetadata.extras);extras.putString("audioBinding",Repository.key(uri.toString()));return item.buildUpon().setUri(uri).setMediaMetadata(item.mediaMetadata.buildUpon().setExtras(extras).build()).build();}
     private void startReadyPlayback(){
         MediaItem item=player.getCurrentMediaItem();if(item==null)return;
         LibraryEntry entry=repository.entry(item.mediaId);AdSegments.Record record=AdSegments.load(this,item.mediaId);android.net.Uri uri=entry==null?null:GeminiPreparation.readyUri(this,repository,entry);
         if(audioItem(item) && uri!=null && !item.mediaId.equals(bypassId)){
-            long position=player.getCurrentPosition();if(item.localConfiguration==null || !uri.equals(item.localConfiguration.uri))player.setMediaItem(item.buildUpon().setUri(uri).build(),position);
+            long position=player.getCurrentPosition();if(item.localConfiguration==null || !uri.equals(item.localConfiguration.uri))player.setMediaItem(boundAudio(item,uri),position);
             AdSegments.Segment segment=record.at(position,record.duration);
             if(segment!=null && segment.end<record.duration){lastAdId=item.mediaId;lastAdFrom=position;lastAdStart=segment.start;player.seekTo(segment.end);AdSegments.prefs(this).edit().putString("lastSkipId",item.mediaId).apply();}
         }
