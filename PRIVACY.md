@@ -21,3 +21,13 @@ En 1.6, al activar descargas automáticas o avisos por programa, Android puede c
 Descubrir consulta las listas públicas de Apple para el país asociado al idioma y la categoría elegidos y consulta hasta 12 RSS candidatos para comprobar el idioma. Al abrir capítulos se consulta el archivo JSON HTTPS publicado por el editor.
 
 La copia completa JSON se guarda en la ubicación elegida mediante Android; contiene programas, favoritos, cola, progreso y ajustes. Onda no la envía a un servidor propio y no incluye audio, vídeo, claves ni referencias de descarga de otros dispositivos. Al restaurarla se sustituye el estado portátil tras comprobar el archivo y confirmar la operación.
+
+## Gemini · Beta opcional
+
+La beta 1.9.0 incorpora análisis de anuncios con una clave API personal de Gemini. Abrir su pantalla no envía audio. Consultar los modelos disponibles envía la clave a la API oficial de Google para autenticar la petición. Antes de cada análisis, Onda muestra el archivo, su tamaño, duración y modelo, y pide confirmar que se envíe **el audio completo** a Google. El uso puede consumir datos, cuota y generar cargos en la cuenta del usuario. Google recibe el audio, la clave, las solicitudes y la dirección IP, y aplica las condiciones de tratamiento correspondientes al proyecto y servicio de Gemini del usuario. Onda no envía la biblioteca, favoritos ni historial de reproducción.
+
+La clave se guarda cifrada con AES-GCM y una clave no exportable de Android Keystore. Está separada de los ajustes portátiles y nunca se incluye en las copias de seguridad JSON. Puedes sustituirla o eliminarla desde la pantalla de Gemini. Esta pantalla no permite capturas y no muestra de nuevo la clave guardada.
+
+El audio se sube a Files API como archivo temporal. Onda intenta eliminar ese archivo de Google al terminar o fallar el análisis; una pérdida de conexión o cancelación durante la subida puede impedir la eliminación inmediata. Files API elimina los archivos temporales automáticamente tras 48 horas. Esto no constituye una promesa de borrado de registros o de otros datos procesados por Google. Cancelar no revierte el consumo de solicitudes ya enviadas.
+
+Solo se guardan localmente los tiempos, etiquetas, modelo utilizado, ajuste de salto y referencias a la descarga analizada. No se conserva una transcripción ni la respuesta bruta. Los resultados no se comparten ni forman parte de la copia portátil. Puedes eliminarlos por episodio; eliminar la clave conserva los tramos ya analizados para escucharlos sin nuevas llamadas a Gemini. Los saltos modifican la posición del reproductor, no el archivo original.
