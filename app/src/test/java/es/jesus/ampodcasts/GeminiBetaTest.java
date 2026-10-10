@@ -17,6 +17,19 @@ import javax.crypto.spec.SecretKeySpec;
 @Config(sdk=28)
 public class GeminiBetaTest {
     private final Context context=RuntimeEnvironment.getApplication();
+    @Test public void keyFormatsAreOpaqueAndErrorsNeverExposeCredentials() {
+        String auth="AQ.A"+String.join("",Collections.nCopies(49,"a"));
+        assertEquals(auth,GeminiKeyStore.normalize("  "+auth+"\n"));
+        String standard="AIza"+String.join("",Collections.nCopies(35,"b"));
+        assertEquals(standard,GeminiKeyStore.normalize(standard));
+        assertEquals("AQ.A"+String.join("",Collections.nCopies(300,"c")),GeminiKeyStore.normalize("AQ.A"+String.join("",Collections.nCopies(300,"c"))));
+        for(String bad:Arrays.asList("AQ.A","\""+auth+"\"",auth+"\ninside",auth+"\r\nX-Test: bad",String.join("",Collections.nCopies(2049,"x")))) {
+            try { GeminiKeyStore.normalize(bad);fail(); } catch(IllegalArgumentException expected) { assertFalse(expected.getMessage().contains(auth)); }
+        }
+        assertFalse(GeminiKeyStore.saveError(new java.security.InvalidKeyException(auth)).contains(auth));
+        assertTrue(GeminiKeyStore.saveError(new java.security.InvalidKeyException(auth)).contains("InvalidKeyException"));
+        assertFalse(GeminiKeyStore.saveError(new IllegalArgumentException(auth)).contains("bloqueo"));
+    }
     @Test public void detectionSortsMergesAndRejectsInvalidOrPartialIntervals() throws Exception {
         List<AdSegments.Segment> segments=AdSegments.parseDetection("{\"segments\":[{\"start_seconds\":20,\"end_seconds\":35},{\"start_seconds\":10,\"end_seconds\":25},{\"start_seconds\":50,\"end_seconds\":60}]}",90000);
         assertEquals(2,segments.size());assertEquals(10000,segments.get(0).start);assertEquals(35000,segments.get(0).end);
