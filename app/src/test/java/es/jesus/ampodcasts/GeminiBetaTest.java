@@ -55,7 +55,7 @@ public class GeminiBetaTest {
     }
     @Test public void settingsAndEpisodeScreenExposeBetaWithoutSendingAudioOnOpen() {
         try(org.robolectric.android.controller.ActivityController<GeminiAdsActivity> activity=Robolectric.buildActivity(GeminiAdsActivity.class).setup()){
-            View root=activity.get().getWindow().getDecorView();assertNotNull(find(root,"Anuncios · Gemini Beta"));assertNotNull(find(root,GeminiAdsActivity.WARNING));assertNotNull(find(root,"Añadir clave API"));assertNull(find(root,"Cancelar"));
+            View root=activity.get().getWindow().getDecorView();assertNotNull(find(root,"Anuncios y temas · Gemini Beta"));assertNotNull(find(root,GeminiAdsActivity.WARNING));assertNotNull(find(root,"Añadir clave API"));assertNull(find(root,"Cancelar"));
             assertTrue((activity.get().getWindow().getAttributes().flags & WindowManager.LayoutParams.FLAG_SECURE)!=0);
         }
         try(org.robolectric.android.controller.ActivityController<SettingsActivity> activity=Robolectric.buildActivity(SettingsActivity.class).setup()){

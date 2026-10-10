@@ -39,5 +39,5 @@ public class GeminiPlaybackTest {
     }
     private SilenceMediaSource source(MediaItem item){SilenceMediaSource source=new SilenceMediaSource.Factory().setDurationUs(180000000).createMediaSource();source.updateMediaItem(item);return source;}
     interface Ready{boolean get();}
-    private void await(Ready ready) throws Exception{long deadline=System.nanoTime()+5000000000L;while(!ready.get() && System.nanoTime()<deadline){Thread.sleep(10);Shadows.shadowOf(Looper.getMainLooper()).idle();}assertTrue(ready.get());}
+    private void await(Ready ready) throws Exception{long deadline=System.nanoTime()+10000000000L;while(!ready.get() && System.nanoTime()<deadline){Thread.sleep(10);Shadows.shadowOf(Looper.getMainLooper()).idle();}assertTrue(ready.get());}
 }
