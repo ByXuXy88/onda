@@ -79,9 +79,9 @@ public class GeminiPreparationTest {
         try {PlaybackService s=service.get();Repository r=new Repository(s);LibraryEntry first=entry(r,"queue-first"),next=entry(r,"queue-next");cache(s,first,true);r.enqueue(next);enable(s);Shadows.shadowOf(Looper.getMainLooper()).idle();if(sleep)r.prefs.edit().putString("sleepEpisode",first.episode.id).commit();
             s.preparationFactory=()->new GeminiPreparation.Work(){public Uri run(LibraryEntry selected,GeminiPreparation.Progress progress) throws Exception {assertEquals(next.episode.id,selected.episode.id);calls.incrementAndGet();entered.countDown();release.await();throw new InterruptedIOException("cancel");}public void cancel(){release.countDown();}};
             Player gate=gate(s);gate.setMediaItems(Arrays.asList(first.mediaItem(s,false),next.mediaItem(s,false)),0,0);assertEquals(1,player(s).getMediaItemCount());
-            androidx.media3.exoplayer.source.SilenceMediaSource source=new androidx.media3.exoplayer.source.SilenceMediaSource.Factory().setDurationUs(180000000).createMediaSource();source.updateMediaItem(first.mediaItem(s,false));player(s).setMediaSource(source);gate.prepare();await(()->playerUnchecked(s).isCurrentMediaItemSeekable());gate.play();await(()->playerUnchecked(s).isPlaying());player(s).seekTo(180000);
-            if(sleep){await(()->playerUnchecked(s).getPlaybackState()==Player.STATE_ENDED);Shadows.shadowOf(Looper.getMainLooper()).idle();assertEquals(0,calls.get());assertEquals(first.episode.id,player(s).getCurrentMediaItem().mediaId);assertEquals(1,r.queue().size());}
-            else {await(()->calls.get()==1);assertTrue(entered.await(2,TimeUnit.SECONDS));assertEquals(next.episode.id,player(s).getCurrentMediaItem().mediaId);assertFalse(player(s).getPlayWhenReady());assertTrue(GeminiPreparation.busy(s,next.episode.id));}
+            androidx.media3.exoplayer.source.SilenceMediaSource source=new androidx.media3.exoplayer.source.SilenceMediaSource.Factory().setDurationUs(180000000).createMediaSource();source.updateMediaItem(first.mediaItem(s,false));player(s).setMediaSource(source);gate.prepare();await("silent source becomes seekable",()->playerUnchecked(s).isCurrentMediaItemSeekable());gate.play();await("silent source starts playback",()->playerUnchecked(s).isPlaying());player(s).seekTo(180000);
+            if(sleep){await("silent source reaches end",()->playerUnchecked(s).getPlaybackState()==Player.STATE_ENDED);Shadows.shadowOf(Looper.getMainLooper()).idle();assertEquals(0,calls.get());assertEquals(first.episode.id,player(s).getCurrentMediaItem().mediaId);assertEquals(1,r.queue().size());}
+            else {await("queued episode starts its own preparation",()->calls.get()==1);assertTrue(entered.await(2,TimeUnit.SECONDS));assertEquals(next.episode.id,player(s).getCurrentMediaItem().mediaId);assertFalse(player(s).getPlayWhenReady());assertTrue(GeminiPreparation.busy(s,next.episode.id));}
         assertNull(GeminiPreparation.readyUri(s,r,first));
         }finally{release.countDown();service.destroy();}
     }
@@ -92,5 +92,9 @@ public class GeminiPreparationTest {
     }
     private ExoPlayer playerUnchecked(PlaybackService s){try{return player(s);}catch(Exception e){throw new RuntimeException(e);}}
     interface Ready{boolean get();}
-    private void await(Ready ready) throws Exception {long deadline=System.nanoTime()+5_000_000_000L;while(!ready.get() && System.nanoTime()<deadline){Thread.sleep(10);Shadows.shadowOf(Looper.getMainLooper()).idleFor(50,TimeUnit.MILLISECONDS);}assertTrue(ready.get());}
+    private void await(Ready ready) throws Exception {await("asynchronous player condition",ready);}
+    // ExoPlayer runs on a real worker thread: virtual main-loop time alone cannot
+    // guarantee completion on a busy CI host. Keep the same assertions, with a
+    // bounded wall-clock allowance and a diagnostic for the awaited transition.
+    private void await(String condition,Ready ready) throws Exception {long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(20);while(!ready.get() && System.nanoTime()<deadline){Thread.sleep(10);Shadows.shadowOf(Looper.getMainLooper()).idleFor(50,TimeUnit.MILLISECONDS);}assertTrue("Timed out waiting for "+condition,ready.get());}
 }
