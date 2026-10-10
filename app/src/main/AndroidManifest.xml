@@ -19,6 +19,7 @@
         <activity android:name=".GeminiAdsActivity" android:exported="false" android:configChanges="orientation|screenSize" />
         <activity android:name=".DownloadsActivity" android:exported="false" />
         <activity android:name=".VideoActivity" android:exported="false" android:supportsPictureInPicture="true" android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation" />
+        <activity android:name=".RecommendationsActivity" android:exported="false" />
         <activity android:name=".DiscoverActivity" android:exported="false" />
         <service android:name=".RefreshJobService" android:exported="true" android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
