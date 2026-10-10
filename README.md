@@ -9,50 +9,55 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 <p>
   <img src="docs/images/android.svg" alt="Android 9 o posterior" height="28" />
-  <img src="docs/images/version.svg" alt="Versión 1.8.3" height="28" />
+  <img src="docs/images/version.svg" alt="Versión 2.0.0" height="28" />
   <a href="LICENSE"><img src="docs/images/licencia.svg" alt="Licencia MIT" height="28" /></a>
 </p>
 
-<a href="https://github.com/ByXuXy88/onda/releases/tag/v1.8.3"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
+<a href="https://github.com/ByXuXy88/onda/releases/tag/v2.0.0"><img src="docs/images/descargar.svg" alt="Descargar Onda para Android" width="252" /></a>
 
-[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v1.8.3) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
+[Descargas](https://github.com/ByXuXy88/onda/releases/tag/v2.0.0) · [Informar de un problema](https://github.com/ByXuXy88/onda/issues) · [Contribuir](CONTRIBUTING.md)
 
 **Empieza con la biblioteca vacía. Tú eliges qué podcasts añadir.**
 
-## Beta experimental · Gemini
-
-[**Onda 1.9.0-beta.5**](https://github.com/ByXuXy88/onda/releases/tag/v1.9.0-beta.5) añade análisis opcional de anuncios con la clave API personal de Gemini. La versión estable sigue siendo **1.8.3**.
-
-1. Instala **Onda-beta.apk** sobre Onda, sin desinstalarla. Conserva el paquete, la firma y los datos; Android no permite volver a instalar una versión con un código de versión inferior sobre esta beta.
-2. Abre **Ajustes → Saltar anuncios · Gemini Beta**. Añade tu clave API y elige un modelo que admita audio entre los disponibles para tu cuenta, o escribe su identificador.
-3. Activa **Preparar con Gemini antes de reproducir** y confirma la autorización para analizar los episodios que reproduzcas. Funciona con **wifi y datos móviles**; **Solo wifi** es opcional y está desactivado inicialmente.
-4. Pulsa **Play**. Si no existe un análisis válido, Onda obtiene audio temporal, muestra la preparación y espera a que Gemini analice el archivo completo para detectar anuncios y organizar capítulos con subtemas en una sola solicitud de generación. Después empieza automáticamente y salta los tramos detectados, incluidos los del comienzo. La cola prepara cada episodio antes de escucharlo.
-5. En el reproductor, **Temas detectados por Gemini** muestra título, resumen, intervalo y subtemas desplegables; toca un tema para ir a ese momento. Los capítulos oficiales permanecen en su propia sección. Los tiempos generados solo se muestran para el mismo audio analizado.
-6. Abre **Descubrir → Para ti**, activa la personalización y escucha episodios con temas de Gemini al menos 30 segundos. Pulsa **Buscar recomendaciones** para consultar hasta tres temas en el catálogo público. Verás la razón de cada sugerencia; nunca se añade un programa automáticamente.
-7. Puedes cancelar desde el reproductor o la notificación. Un error deja la escucha pausada: pulsa Play para reintentar o **Escuchar sin análisis** para ese episodio. No hay reintentos de pago automáticos. Una preparación cancelada no puede iniciar después otro episodio.
-
-Los análisis de betas anteriores siguen funcionando y no se reenvían automáticamente solo para añadir temas. Si quieres capítulos en un episodio ya preparado, abre **Anuncios y temas · Gemini Beta** desde el reproductor y pulsa **Actualizar anuncios y temas**: reutiliza su audio temporal mientras exista, solicita confirmación y vuelve a analizar anuncios y temas juntos.
-
-También puedes seguir analizando manualmente una descarga desde **Anuncios · Gemini Beta**. Ese análisis conserva su confirmación individual.
-Al completar el análisis, los tramos quedan guardados y **se saltan automáticamente** al reproducir el archivo analizado, incluso sin conexión mientras siga disponible. Puedes apagar los saltos por episodio, eliminar el análisis o usar **Deshacer último salto de anuncio** en el reproductor. Deshacer conserva ese tramo en las próximas escuchas hasta volver a analizar.
-
-**Para ti** mantiene un historial local independiente de hasta 100 episodios escuchados desde su activación, con los temas y el nombre del programa. Los favoritos reciben más peso y se excluyen programas ya seguidos. El historial se puede borrar sin cambiar favoritos, progreso ni capítulos y no se exporta en la copia portátil. Desactivar la función detiene el aprendizaje y las búsquedas; conserva el historial hasta que lo borres. Al buscar se envían hasta tres temas al catálogo de Apple, sin audio, clave API ni historial completo. Las búsquedas no añaden llamadas a Gemini; usan temas ya obtenidos en el análisis. No se infieren atributos personales del oyente. Los resultados pueden no coincidir con sus gustos.
-
-**Gemini no es infalible:** puede omitir anuncios, confundir conversación con publicidad o calcular mal los tiempos y saltarse contenido del podcast. La beta no garantiza detección ni sincronización precisa. Esta advertencia aparece en la app y antes de cada análisis.
-
-La beta acepta claves con punto como `AQ.A…`, además de las claves anteriores, y diferencia los errores de formato, cifrado y almacenamiento sin mostrar la clave.
-
-La clave se cifra mediante Android Keystore y se excluye de las copias de seguridad. Los resultados son locales y tampoco forman parte de la copia portátil. La preparación reproduce **exactamente el archivo analizado**, conservado en la caché privada temporal; nunca aplica esos tiempos a una segunda transmisión RSS, que podría insertar anuncios distintos. La caché conserva los episodios analizados pendientes, aunque haya más de tres. Al alcanzar el final de reproducción borra únicamente el audio temporal de ese episodio; conserva los resultados y las descargas manuales. Puedes liberar la caché desde los ajustes de Gemini. Los nuevos episodios requieren espacio libre suficiente; no se borran los pendientes para hacer sitio. Android puede liberar la caché, y entonces será necesario preparar otra vez el episodio. El audio temporal no aparece en Descargas ni se exporta. No se utiliza el micrófono.
-
-La beta admite audio de hasta **512 MB y 9 horas**, sujeto también a los límites del modelo y de la cuenta. No analiza directos ni vídeo separado. El modo automático está desactivado inicialmente y solo analiza episodios seleccionados para escuchar, incluida la cola; no analiza todo el catálogo al actualizar el RSS. La autorización se solicita al activarlo y se puede retirar en Ajustes. Mientras prepara el episodio, mantiene una notificación de progreso y cancelación, también con la pantalla apagada. Android puede interrumpir el trabajo; el proceso no se reanuda solo después de cerrar o reiniciar la app. Cancelar no revierte el consumo de solicitudes ya enviadas. Un fallo conserva el análisis anterior y nunca inicia la escucha con resultados parciales. La preparación tiene un límite de 30 minutos.
-
-La beta 5 conserva las pruebas de espera, caché, cancelación y cola, y añade validación de capítulos y subtemas, conservación de resultados al deshacer, identidad del audio en el reproductor y recomendaciones con historial opcional. Los nuevos capítulos generados y la calidad de las sugerencias deben comprobarse en un móvil con contenido real.
-
-La integración usa la API oficial de Gemini, con subida temporal mediante Files API y respuesta JSON validada. Onda intenta borrar su archivo temporal de Google al terminar o fallar; si no puede hacerlo, Files API lo elimina automáticamente tras 48 horas. No hay servidor de Onda ni integración con SponsorBlock en esta beta.
-
-La compilación y las pruebas automatizadas no sustituyen una prueba de precisión con audio real y una clave del usuario. Esta beta se publica como **pre-release**, sin sustituir la descarga estable.
-
 </div>
+
+## Onda 2.0 · Novedades
+
+| Mejora | Qué aporta |
+| --- | --- |
+| Inicio personalizado | Seguir escuchando y últimos episodios sin escuchar de tus programas, con acceso a la cola. |
+| Modo coche | Pantalla sencilla con controles grandes, saltos y cola; mantiene la pantalla encendida mientras está abierta. |
+| Transcripciones | Busca palabras o frases en el texto con tiempos publicado por el podcast y salta a ese momento. |
+| Ajustes por programa | Velocidad y omisión de silencios independientes, con opción de usar los ajustes generales. |
+| Temporizador suave | Baja el volumen en los últimos 30 segundos; se puede desactivar en Ajustes. |
+| Espacio automático | Límite configurable de 500 MB, 1 GB, 2 GB o 5 GB, o sin límite, para aplazar nuevas descargas automáticas. |
+| Diálogos renovados | Superficies oscuras con esquinas redondeadas y controles del tema de Onda. |
+
+**Actualiza sin desinstalar:** conserva paquete y firma original. Código de versión 18.
+
+### Las nuevas pantallas
+
+| Modo coche | Transcripción | Ajustes por podcast |
+| :---: | :---: | :---: |
+| <img src="docs/images/modo-coche.png" alt="Modo coche de Onda 2.0" width="240" /> | <img src="docs/images/transcripcion.png" alt="Transcripción con tiempos y búsqueda" width="240" /> | <img src="docs/images/opciones.png" alt="Velocidad y silencios por programa" width="240" /> |
+
+### Cómo funcionan
+
+- **Inicio:** usa episodios guardados y progreso local. Actualiza cada programa para incorporar sus novedades; no añade podcasts automáticamente.
+- **Transcripción:** requiere un enlace HTTPS publicado en el RSS, de tipo VTT, SRT o JSON de Podcasting 2.0 con segmentos `startTime`, `endTime` y `body`. Actualiza los podcasts añadidos antes de 2.0 para obtener sus enlaces. Busca localmente, sin enviar texto ni audio a Gemini. Caché disponible sin conexión mientras Android la conserve. Máximo 4 MB y 10 000 fragmentos. Los tiempos del editor pueden variar cuando inserta anuncios dinámicos. No genera transcripciones nuevas con Gemini.
+- **Modo coche:** se abre desde el reproductor o Ajustes. No inicia reproducción automáticamente. Es una pantalla dentro de Onda; no incorpora Android Auto.
+- **Velocidad:** el cambio desde el reproductor se guarda por programa; puedes volver al ajuste general desde el mismo diálogo. Las opciones del podcast permiten configurar también silencios. Las nuevas preferencias se incluyen en la copia completa.
+- **Espacio automático:** 1 GB inicialmente; reserva 128 MB por descarga en curso. Un archivo mayor puede superar el límite. Las descargas manuales y la caché de Gemini son independientes. El límite por programa conserva su gestión anterior de 1, 3, 5 o 10 archivos, protegiendo manuales y episodio activo.
+
+### Gemini opcional
+
+Conserva los anuncios, temas, resúmenes breves y subtemas de la beta anterior, así como recomendaciones voluntarias. El modo automático sigue desactivado inicialmente, requiere autorización y puede consumir cuota o generar cargos. La detección puede equivocarse. La caché conserva los audios pendientes y borra únicamente el audio temporal al terminar.
+
+[Funcionamiento y límites de Gemini](docs/GEMINI.md) · [Privacidad](PRIVACY.md)
+
+### Validación
+
+98 pruebas automatizadas aprobadas, compilación de distribución firmada y lint de Android sin errores. Capturas renderizadas desde la interfaz con datos de demostración. La reproducción, el temporizador y la precisión de Gemini requieren también comprobación en un móvil real.
 
 ## Así se ve Onda
 
@@ -73,7 +78,7 @@ La compilación y las pruebas automatizadas no sustituyen una prueba de precisi�
 | :---: | :---: | :---: |
 | <img src="docs/images/opciones.png" alt="Opciones de descarga automática y avisos por podcast" width="240" /> | <img src="docs/images/descubrir.png" alt="Exploración por idioma y categoría" width="240" /> | <img src="docs/images/texto-grande.png" alt="Miniaturas, duración en horas y texto ampliado" width="240" /> |
 
-<sub>Vistas de la interfaz renderizadas a partir del código de Onda 1.8.1 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
+<sub>Vistas de la interfaz renderizadas a partir del código de Onda 2.0.0 con una biblioteca vacía o datos de demostración solo para las capturas. Los programas de demostración no se incluyen en la app. La apariencia de los diálogos puede variar según la versión de Android.</sub>
 
 ## Qué puedes hacer
 
@@ -116,7 +121,7 @@ El proyecto parte de esa idea y busca evolucionar hacia una aplicación independ
 
 Cada persona decide qué programas añadir. **Una instalación nueva no incluye ningún podcast ni ningún audio.** Onda es independiente: no es una aplicación oficial de Apple ni sincroniza tu cuenta de Apple Podcasts.
 
-## Estado de la versión 1.8.3
+## Estado de la versión 2.0.0
 
 La notificación multimedia usa el símbolo de barras de Onda en versión monocroma, en lugar del icono genérico de reproducción. La portada del episodio se mantiene como fondo del reproductor del sistema.
 
@@ -128,15 +133,15 @@ La biblioteca muestra tus podcasts en tarjetas con portada. Cada programa abre s
 
 En el reproductor puedes consultar los capítulos por temas publicados por el editor, ver el capítulo actual y saltar al siguiente. También puedes guardar marcas personales con nombre y volver a ellas. Las marcas y los nuevos ajustes se incluyen en la copia completa.
 
-Desde las opciones del programa puedes omitir un tiempo fijo de inicio y final (0 desactiva; hasta 1800 segundos). El inicio respeta una escucha reanudada y el final solo se omite con duración conocida, conservando el comportamiento de la cola y del temporizador. Si ambos saltos abarcan todo el episodio, se desactivan para ese episodio. No se detectan anuncios automáticamente ni se analiza o envía el audio para transcribirlo. En Ajustes puedes elegir saltos manuales de 10, 15, 30 o 60 segundos y activar o desactivar los colores del sistema en la biblioteca y el reproductor (Android 12 o posterior), con fondo negro OLED.
+Desde las opciones del programa puedes omitir un tiempo fijo de inicio y final (0 desactiva; hasta 1800 segundos). El inicio respeta una escucha reanudada y el final solo se omite con duración conocida, conservando el comportamiento de la cola y del temporizador. Si ambos saltos abarcan todo el episodio, se desactivan para ese episodio. Gemini permite detectar anuncios y organizar temas de forma opcional; sigue siendo experimental. La transcripción con búsqueda utiliza texto publicado por el editor. En Ajustes puedes elegir saltos manuales de 10, 15, 30 o 60 segundos y activar o desactivar los colores del sistema en la biblioteca y el reproductor (Android 12 o posterior), con fondo negro OLED.
 
-Las mejoras están disponibles en [**Onda 1.8.3**](https://github.com/ByXuXy88/onda/releases/tag/v1.8.3). Descarga `Onda.apk` e instala sobre Onda 1.5, 1.6, 1.7, 1.8, 1.8.1 o 1.8.2 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
+Las mejoras están disponibles en [**Onda 2.0**](https://github.com/ByXuXy88/onda/releases/tag/v2.0.0). Descarga `Onda-2.0.0.apk` e instala sobre Onda 1.5, 1.6, 1.7, 1.8, 1.8.1, 1.8.2, 1.8.3 o 1.9.0-beta.5 sin desinstalarla: se mantienen el paquete y la firma original para conservar biblioteca, favoritos, cola, progreso y descargas.
 
 Las compilaciones de vista previa usan un paquete independiente. La reproducción y el vídeo en ventana flotante aún deben comprobarse en un dispositivo físico.
 
 ## Empieza a escuchar
 
-1. Abre la [versión 1.8.3](https://github.com/ByXuXy88/onda/releases/tag/v1.8.3) y descarga **Onda.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
+1. Abre la [versión 2.0.0](https://github.com/ByXuXy88/onda/releases/tag/v2.0.0) y descarga **Onda-2.0.0.apk** en la sección **Assets**. Necesitas Android 9 o posterior.
 2. Instala y abre Onda. Toca **+** para buscar un programa, pegar su RSS o un enlace de Apple, o importar una biblioteca OPML.
 3. Elige un episodio y toca el icono de reproducción. Para escucharlo sin conexión, descárgalo y espera al estado **Disponible sin conexión**.
 
@@ -214,7 +219,3 @@ Los podcasts y sus derechos pertenecen a sus respectivos editores. Onda no es un
 ## Inspiración y créditos
 
 Algunos elementos visuales de los controles de reproducción de Onda están inspirados en [Phonograph Plus](https://github.com/chr56/Phonograph_Plus), especialmente su estilo Material. El resto del diseño y las funciones de Onda se han desarrollado de forma independiente. Gracias a chr56 y a quienes contribuyen al proyecto. Esta adaptación utiliza controles propios y no incorpora código ni recursos de Phonograph Plus.
-
-### Ajustes de la beta 5
-
-Los episodios preparados pendientes se conservan hasta alcanzar el final. Pausar, cambiar de episodio o cerrar Onda no los elimina. La caché sigue siendo temporal y Android puede liberarla. Escuchar de nuevo un episodio cuyo audio se haya borrado requiere otra preparación para vincular los tramos al archivo exacto. Los controles de Descubrir, Descargas, Ajustes y Gemini comparten superficies OLED y acentos; el reproductor usa botones visualmente más pequeños y mantiene áreas táctiles de al menos 48 dp.
