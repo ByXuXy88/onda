@@ -56,6 +56,16 @@ public class GeminiPreparationTest {
         Context c=RuntimeEnvironment.getApplication();Repository r=new Repository(c);LibraryEntry active=entry(r,"active"),other=entry(r,"other");cache(c,active,true);cache(c,other,true);GeminiPreparation.clear(c,active.episode.id);assertNotNull(GeminiPreparation.readyUri(c,r,active));assertNull(GeminiPreparation.readyUri(c,r,other));
         assertEquals("audio/mpeg",GeminiPreparation.mime("audio/mpeg; charset=binary",active.episode.url));assertEquals("audio/m4a",GeminiPreparation.mime("audio/mp4","https://example.com/audio"));assertEquals("audio/ogg",GeminiPreparation.mime("application/octet-stream","https://example.com/audio.ogg?token=test"));
     }
+    @Test public void unfinishedCacheSurvivesMoreThanThreeEpisodesAndCompletionOnlyRemovesPlayedBytes() throws Exception {
+        Context c=RuntimeEnvironment.getApplication();Repository r=new Repository(c);List<LibraryEntry> pending=new ArrayList<>();List<Uri> uris=new ArrayList<>();
+        for(int i=0;i<5;i++){LibraryEntry e=entry(r,"pending-"+i);pending.add(e);uris.add(cache(c,e,true));r.savePosition(e.episode.id,45000);}
+        File orphan=new File(GeminiPreparation.directory(c),UUID.randomUUID()+".audio");try(OutputStream out=new FileOutputStream(orphan)){out.write(1);}
+        GeminiPreparation.prune(c,"",pending.get(4).episode.id);
+        assertFalse(orphan.exists());for(int i=0;i<5;i++)assertEquals(uris.get(i),GeminiPreparation.readyUri(c,r,pending.get(i)));
+        LibraryEntry finished=pending.get(0);GeminiPreparation.completed(c,finished.episode.id,Uri.parse("file:///different.audio"));assertEquals(uris.get(0),GeminiPreparation.readyUri(c,r,finished));
+        GeminiPreparation.completed(c,finished.episode.id,uris.get(0));assertNull(GeminiPreparation.readyUri(c,r,finished));assertNotNull(AdSegments.load(c,finished.episode.id));
+        for(int i=1;i<5;i++){assertEquals(uris.get(i),GeminiPreparation.readyUri(c,r,pending.get(i)));assertEquals(45000,r.position(pending.get(i).episode.id));}
+    }
     // Robolectric's API 28 AudioTrack shadow does not complete the silent source at EOF.
     // Exercise real ExoPlayer end-of-playback transitions with the API 33 audio shadow.
     @Test @Config(sdk=33) public void queueWaitsForItsOwnAnalysisInsteadOfStartingAnUnpreparedStream() throws Exception {
@@ -72,6 +82,7 @@ public class GeminiPreparationTest {
             androidx.media3.exoplayer.source.SilenceMediaSource source=new androidx.media3.exoplayer.source.SilenceMediaSource.Factory().setDurationUs(180000000).createMediaSource();source.updateMediaItem(first.mediaItem(s,false));player(s).setMediaSource(source);gate.prepare();await(()->playerUnchecked(s).isCurrentMediaItemSeekable());gate.play();await(()->playerUnchecked(s).isPlaying());player(s).seekTo(180000);
             if(sleep){await(()->playerUnchecked(s).getPlaybackState()==Player.STATE_ENDED);Shadows.shadowOf(Looper.getMainLooper()).idle();assertEquals(0,calls.get());assertEquals(first.episode.id,player(s).getCurrentMediaItem().mediaId);assertEquals(1,r.queue().size());}
             else {await(()->calls.get()==1);assertTrue(entered.await(2,TimeUnit.SECONDS));assertEquals(next.episode.id,player(s).getCurrentMediaItem().mediaId);assertFalse(player(s).getPlayWhenReady());assertTrue(GeminiPreparation.busy(s,next.episode.id));}
+        assertNull(GeminiPreparation.readyUri(s,r,first));
         }finally{release.countDown();service.destroy();}
     }
     @Test public void mobileDataIsAllowedByDefaultAndWifiOnlyIsAnExplicitChoice() throws Exception {

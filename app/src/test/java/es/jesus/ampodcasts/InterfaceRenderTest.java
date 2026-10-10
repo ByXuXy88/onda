@@ -33,6 +33,8 @@ public class InterfaceRenderTest {
         }
         try (org.robolectric.android.controller.ActivityController<SettingsActivity> c = Robolectric.buildActivity(SettingsActivity.class).setup().visible()) { capture(c.get(), "ajustes"); ProgramOptions.show(c.get(), p.feed); capture(ShadowDialog.getLatestDialog(), "opciones"); }
         try (org.robolectric.android.controller.ActivityController<DiscoverActivity> c = Robolectric.buildActivity(DiscoverActivity.class).setup().visible()) { capture(c.get(), "descubrir"); }
+        try (org.robolectric.android.controller.ActivityController<DownloadsActivity> c = Robolectric.buildActivity(DownloadsActivity.class).setup().visible()) { java.lang.reflect.Method render=DownloadsActivity.class.getDeclaredMethod("render");render.setAccessible(true);render.invoke(c.get());capture(c.get(),"descargas"); }
+        try (org.robolectric.android.controller.ActivityController<RecommendationsActivity> c = Robolectric.buildActivity(RecommendationsActivity.class).setup().visible()) { capture(c.get(),"para-ti"); }
         r.prefs.edit().putFloat("textScale", 1.3f).commit();
         try (org.robolectric.android.controller.ActivityController<MainActivity> c = Robolectric.buildActivity(MainActivity.class).setup().visible()) { flushImages(c.get()); View root = c.get().getWindow().getDecorView(); find(root,"Abrir podcast Programa de demostración").performClick(); measure(root); View video = find(root, "Ver vídeo del episodio"); assertNotNull(video); assertTrue(video.getWidth() >= 144); capture(c.get(), "texto-grande"); }
     }

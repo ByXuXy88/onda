@@ -22,14 +22,14 @@ public class EmptyLibraryUiTest {
             android.app.Dialog dialog = ShadowDialog.getLatestDialog(); assertNotNull(dialog); assertTrue(dialog.isShowing());
         }
     }
-    @Test public void wideControlsKeepSquare24DpIcons() {
+    @Test public void wideControlsKeepSquareCompactIcons() {
         try (ActivityController<MainActivity> controller = Robolectric.buildActivity(MainActivity.class).setup()) {
             MainActivity activity = controller.get();
             View root = activity.getWindow().getDecorView();
             root.measure(View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY), View.MeasureSpec.makeMeasureSpec(2400, View.MeasureSpec.EXACTLY));
             root.layout(0, 0, 1080, 2400);
             ImageButton button = (ImageButton) findByDescription(root, "Añadir podcasts");
-            int size = (int) (24 * activity.getResources().getDisplayMetrics().density + .5f);
+            int size = (int) (22 * activity.getResources().getDisplayMetrics().density + .5f);
             assertEquals(button.getWidth(), button.getHeight());
             assertEquals(size, button.getDrawable().getIntrinsicWidth());
             assertEquals(size, button.getDrawable().getIntrinsicHeight());
