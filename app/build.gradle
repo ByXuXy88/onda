@@ -2,7 +2,7 @@ plugins { id 'com.android.application' }
 android {
     namespace 'es.jesus.ampodcasts'
     compileSdk 35
-    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 12; versionName '1.8.3' }
+    defaultConfig { applicationId 'es.jesus.ampodcasts'; minSdk 28; targetSdk 35; versionCode 13; versionName '1.9.0-beta.1' }
     def signingPath = System.getenv('ONDA_KEYSTORE_PATH')
     if (signingPath) {
         signingConfigs {
@@ -20,7 +20,7 @@ android {
     }
     buildTypes {
         debug { applicationIdSuffix '.preview'; resValue 'string', 'app_name', 'Onda · Vista previa' }
-        release { resValue 'string', 'app_name', 'Onda' }
+        release { resValue 'string', 'app_name', 'Onda · Beta' }
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
     testOptions {
