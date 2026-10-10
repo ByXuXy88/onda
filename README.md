@@ -21,7 +21,7 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 
 ## Beta experimental · Gemini
 
-[**Onda 1.9.0-beta.1**](https://github.com/ByXuXy88/onda/releases/tag/v1.9.0-beta.1) añade análisis opcional de anuncios con la clave API personal de Gemini. La versión estable sigue siendo **1.8.3**.
+[**Onda 1.9.0-beta.2**](https://github.com/ByXuXy88/onda/releases/tag/v1.9.0-beta.2) añade análisis opcional de anuncios con la clave API personal de Gemini. La versión estable sigue siendo **1.8.3**.
 
 1. Instala **Onda-beta.apk** sobre Onda, sin desinstalarla. Conserva el paquete, la firma y los datos; Android no permite volver a instalar una versión con un código de versión inferior sobre esta beta.
 2. Abre **Ajustes → Saltar anuncios · Gemini Beta**. Añade tu clave API y elige un modelo que admita audio entre los disponibles para tu cuenta, o escribe su identificador.
@@ -29,6 +29,8 @@ Añade tus programas y lleva tus episodios contigo, también sin conexión.
 4. Al completar el análisis, los tramos quedan guardados y **se saltan automáticamente** al reproducir ese archivo descargado, incluso sin conexión. Puedes apagar los saltos por episodio, eliminar el análisis o usar **Deshacer último salto de anuncio** en el reproductor. Deshacer conserva ese tramo en las próximas escuchas hasta volver a analizar.
 
 **Gemini no es infalible:** puede omitir anuncios, confundir conversación con publicidad o calcular mal los tiempos y saltarse contenido del podcast. La beta no garantiza detección ni sincronización precisa. Esta advertencia aparece en la app y antes de cada análisis.
+
+La beta 2 acepta claves con punto como `AQ.A…`, además de las claves anteriores, y diferencia los errores de formato, cifrado y almacenamiento sin mostrar la clave.
 
 La clave se cifra mediante Android Keystore y se excluye de las copias de seguridad. Los resultados son locales y no forman parte de la copia portátil, porque se vinculan al identificador de la descarga de este dispositivo. No se aplican al RSS en streaming, a una descarga sustituida ni a un vídeo separado. La beta admite audio descargado de hasta **512 MB y 9 horas**, sujeto también a los límites del modelo y de la cuenta. El análisis se solicita manualmente, no se repite durante la reproducción y debe mantenerse abierta su pantalla. Cancelar no revierte el consumo de solicitudes ya enviadas. Un fallo conserva el análisis anterior y nunca activa resultados parciales.
 
