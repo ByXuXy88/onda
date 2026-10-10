@@ -88,13 +88,13 @@ public final class PlaybackService extends MediaSessionService {
             @Override public void onPositionDiscontinuity(Player.PositionInfo oldPos, Player.PositionInfo newPos, int reason) {
                 if (reason == Player.DISCONTINUITY_REASON_SEEK) initialSkipPending = false;
                 if (oldPos.mediaItem != null) {
-                    if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) repository.setListened(oldPos.mediaItem.mediaId, true);
+                    if (reason == Player.DISCONTINUITY_REASON_AUTO_TRANSITION) { repository.setListened(oldPos.mediaItem.mediaId, true); GeminiPreparation.completed(PlaybackService.this,oldPos.mediaItem.mediaId,oldPos.mediaItem.localConfiguration==null?null:oldPos.mediaItem.localConfiguration.uri); }
                     else repository.savePosition(oldPos.mediaItem.mediaId, oldPos.positionMs);
                 }
             }
             @Override public void onPlaybackStateChanged(int state) {
                 if(state == Player.STATE_READY) applyOffsets();
-                if (state == Player.STATE_ENDED && !previousId.isEmpty()) repository.setListened(previousId, true);
+                if (state == Player.STATE_ENDED && !previousId.isEmpty()) { repository.setListened(previousId, true); GeminiPreparation.completed(PlaybackService.this,previousId,player.getCurrentMediaItem()==null || player.getCurrentMediaItem().localConfiguration==null?null:player.getCurrentMediaItem().localConfiguration.uri); }
                 if (state == Player.STATE_ENDED && previousId.equals(repository.prefs.getString("sleepEpisode", ""))) { player.pause(); repository.prefs.edit().remove("sleepEpisode").apply(); }
                 else if(state==Player.STATE_ENDED && GeminiPreparation.enabled(PlaybackService.this) && !previousId.equals(queuedFrom)) {String finished=previousId;queuedFrom=finished;handler.post(()->advancePreparedQueue(finished));}
             }

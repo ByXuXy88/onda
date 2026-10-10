@@ -105,10 +105,10 @@ public final class MainActivity extends Activity {
         allTab = icon("list", "Todos los episodios"); offlineTab = icon("download", "Tus descargas");
         ImageButton all = allTab, offline = offlineTab;
         all.setOnClickListener(v -> { downloadedOnly = false; libraryMode = 0; displayLimit = 40; render(); }); offline.setOnClickListener(v -> { downloadedOnly = true; libraryMode = 0; displayLimit = 40; render(); });
-        tabs.addView(all, new LinearLayout.LayoutParams(0, dp(48), 1)); tabs.addView(offline, new LinearLayout.LayoutParams(0, dp(48), 1));
+        tabs.addView(all, new LinearLayout.LayoutParams(dp(48), dp(48))); tabs.addView(offline, new LinearLayout.LayoutParams(dp(48), dp(48)));
         ImageButton collections = icon("library", "Secciones de tu biblioteca"); collections.setOnClickListener(v -> libraryMenu()); tabs.addView(collections, new LinearLayout.LayoutParams(dp(48), dp(48)));
         ImageButton searchLibrary = icon("search", "Buscar en tu biblioteca"); searchLibrary.setOnClickListener(v -> searchLibrary()); tabs.addView(searchLibrary, new LinearLayout.LayoutParams(dp(48), dp(48)));
-        refresh = icon("refresh", "Actualizar episodios"); refresh.setContentDescription("Actualizar episodios"); refresh.setOnClickListener(v -> load()); tabs.addView(refresh, new LinearLayout.LayoutParams(dp(55), dp(48)));
+        refresh = icon("refresh", "Actualizar episodios"); refresh.setContentDescription("Actualizar episodios"); refresh.setOnClickListener(v -> load()); tabs.addView(refresh, new LinearLayout.LayoutParams(dp(48), dp(48)));
         programPanel.addView(tabs); status = label("", 12, MUTED, false); status.setPadding(0, dp(8), 0, 0); head.addView(status); root.addView(head);
         ScrollView scroll = new ScrollView(this); list = column(16); scroll.addView(list); root.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
         LinearLayout player = column(10); player.setBackground(bg(0xff181c24,24));
@@ -435,12 +435,12 @@ public final class MainActivity extends Activity {
         LinearLayout shortcuts=row(); addCompactAction(shortcuts,actionButton("Continuar",()->{ home=false; libraryMode=1; render(); }),1); addCompactAction(shortcuts,actionButton("Favoritos",()->{home=false;libraryMode=2;render();}),1); addCompactAction(shortcuts,actionButton("Cola",()->{home=false;libraryMode=3;render();}),1); list.addView(shortcuts);
         for(int i=0;i<podcasts.size();i+=2) { LinearLayout cards=row(); cards.setGravity(Gravity.TOP); for(int j=i;j<Math.min(i+2,podcasts.size());j++) { Podcast podcast=podcasts.get(j); LinearLayout card=column(12); card.setBackground(bg(0xff111318,24)); FrameLayout picture=podcastPicture(podcast); picture.setContentDescription("Portada de "+podcast.title); card.addView(picture,new LinearLayout.LayoutParams(-1,dp(132))); TextView name=label(podcast.title,16,INK,true); name.setMaxLines(3); name.setPadding(0,dp(10),0,0); card.addView(name); card.setContentDescription("Abrir podcast "+podcast.title); card.setFocusable(true); card.setOnClickListener(v->switchPodcast(podcast)); LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-2,1); params.setMargins(dp(4),dp(8),dp(4),0); cards.addView(card,params); } if(i+1==podcasts.size()) cards.addView(new Space(this),new LinearLayout.LayoutParams(0,1,1)); list.addView(cards); }
     }
-    private Button actionButton(String text,Runnable action) { Button b=new Button(this); b.setText(text); b.setTextSize(12); b.setAllCaps(false); b.setTextColor(PURPLE); b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33a8c7fa),bg(0xff181c24,20),null)); b.setOnClickListener(v->action.run()); return b; }
+    private Button actionButton(String text,Runnable action) { Button b=new Button(this); b.setText(text); b.setTextSize(12); b.setAllCaps(false); b.setTextColor(PURPLE); b.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33a8c7fa),bg(0xff181c24,20),null)); UiStyle.button(b); b.setOnClickListener(v->action.run()); return b; }
     private void compactAction(Button button) {
         button.setMinWidth(0); button.setMinimumWidth(0); button.setMinHeight(dp(48)); button.setMinimumHeight(dp(48));
         android.graphics.drawable.Drawable shape=new android.graphics.drawable.InsetDrawable(bg(0xff181c24,16),0,dp(6),0,dp(6));
         button.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(0x33a8c7fa),shape,null));
-        button.setPadding(dp(12),dp(10),dp(12),dp(10));
+        button.setPadding(dp(10),dp(8),dp(10),dp(8));
     }
     private void addCompactAction(LinearLayout row,Button button,float weight) {
         compactAction(button); LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(0,-2,weight);
@@ -462,7 +462,7 @@ public final class MainActivity extends Activity {
         ImageView cover=new ImageView(this); cover.setScaleType(ImageView.ScaleType.CENTER_CROP); cover.setBackground(bg(0xff263344,28)); cover.setClipToOutline(true); cover.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO); int coverSize=Math.max(120,Math.min(320,getResources().getConfiguration().screenWidthDp-48)); LinearLayout.LayoutParams coverParams=new LinearLayout.LayoutParams(dp(coverSize),dp(coverSize)); coverParams.gravity=Gravity.CENTER_HORIZONTAL;content.addView(cover,coverParams);
         TextView title=label("",24,INK,true), program=label("",16,MUTED,false); title.setPadding(0,dp(20),0,dp(6)); content.addView(title); content.addView(program);
         SeekBar progress=new SeekBar(this); progress.setMax(1000); content.addView(progress,new LinearLayout.LayoutParams(-1,dp(48))); TextView elapsed=label("",13,MUTED,false); content.addView(elapsed); boolean[] dragging={false}; progress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener(){ public void onProgressChanged(SeekBar p,int value,boolean user){} public void onStartTrackingTouch(SeekBar p){dragging[0]=true;} public void onStopTrackingTouch(SeekBar p){if(controller!=null && controller.getDuration()>0)controller.seekTo(controller.getDuration()*p.getProgress()/1000);dragging[0]=false;} });
-        LinearLayout controls=row(); controls.setGravity(Gravity.CENTER); controls.setPadding(0,dp(18),0,dp(18)); Button back=actionButton("",()->jump(false)), forward=actionButton("",()->jump(true)); ImageButton play=icon("play","Reproducir"); stylePlaybackControl(play,true); play.setOnClickListener(v->togglePlayback()); controls.addView(back,new LinearLayout.LayoutParams(dp(64),dp(56))); LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(dp(80),dp(80)); pp.setMargins(dp(20),0,dp(20),0); controls.addView(play,pp); controls.addView(forward,new LinearLayout.LayoutParams(dp(64),dp(56))); content.addView(controls);
+        LinearLayout controls=row(); controls.setGravity(Gravity.CENTER); controls.setPadding(0,dp(12),0,dp(12)); Button back=actionButton("",()->jump(false)), forward=actionButton("",()->jump(true)); ImageButton play=icon("play","Reproducir"); stylePlaybackControl(play,true); play.setOnClickListener(v->togglePlayback()); controls.addView(back,new LinearLayout.LayoutParams(dp(56),dp(48))); LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(dp(64),dp(64)); pp.setMargins(dp(16),0,dp(16),0); controls.addView(play,pp); controls.addView(forward,new LinearLayout.LayoutParams(dp(56),dp(48))); content.addView(controls);
         LinearLayout tools=row(); Button speed=actionButton("1×",()->PlaybackTools.speed(this)); addCompactAction(tools,speed,.75f); addCompactAction(tools,actionButton("Temporizador",this::sleepMenu),1.5f); addCompactAction(tools,actionButton("Cola",()->showQueue()),.75f); content.addView(tools);
         Button video=actionButton("Ver vídeo",()->startActivity(new Intent(this,VideoActivity.class))); addSecondaryAction(content,video);
         Button download=actionButton("Descargar episodio",()->{ if(controller==null || controller.getCurrentMediaItem()==null)return; LibraryEntry entry=repository.entry(controller.getCurrentMediaItem().mediaId); if(entry==null)return; int state=repository.downloadStatus(entry.episode); if(state==DownloadManager.STATUS_SUCCESSFUL || state==DownloadManager.STATUS_RUNNING || state==DownloadManager.STATUS_PENDING || state==DownloadManager.STATUS_PAUSED)return; try{repository.download(entry.episode);Toast.makeText(this,"Descarga iniciada",Toast.LENGTH_SHORT).show();}catch(Exception e){Toast.makeText(this,"No se pudo descargar",Toast.LENGTH_LONG).show();} }); addSecondaryAction(content,download);
@@ -540,16 +540,16 @@ public final class MainActivity extends Activity {
     private LinearLayout row() { LinearLayout l = new LinearLayout(this); l.setOrientation(LinearLayout.HORIZONTAL); l.setGravity(Gravity.CENTER_VERTICAL); return l; }
     private TextView label(String text, int size, int color, boolean bold) { TextView t = new TextView(this); t.setText(text); t.setTextSize(size); t.setTextColor(color); if (bold) t.setTypeface(null, Typeface.BOLD); return t; }
     private ImageButton icon(String type, String description) {
-        ImageButton b = new ImageButton(this); b.setBackground(bg(0xff111318, 24)); b.setPadding(dp(12), dp(12), dp(12), dp(12));
+        ImageButton b = new ImageButton(this); b.setBackground(bg(0xff111318, 24)); b.setBackground(UiStyle.ripple(this,5)); b.setPadding(dp(13), dp(13), dp(13), dp(13));
         b.setScaleType(ImageView.ScaleType.CENTER_INSIDE); setIcon(b, type, description); return b;
     }
     private void setIcon(ImageButton button, String type, String description) {
-        if (!type.equals(button.getTag())) { button.setImageDrawable(new ControlIcon(type, button == toggle ? 0xff102037 : PURPLE, dp(button == toggle ? 32 : 24))); button.setTag(type); }
+        if (!type.equals(button.getTag())) { button.setImageDrawable(new ControlIcon(type, button == toggle ? 0xff102037 : PURPLE, dp(button == toggle ? 28 : 22))); button.setTag(type); }
         button.setContentDescription(description); button.setTooltipText(description);
     }
     private void stylePlaybackControl(ImageButton button, boolean primary) {
         button.setBackground(new android.graphics.drawable.RippleDrawable(android.content.res.ColorStateList.valueOf(primary ? 0x44304760 : 0x44a8c7fa),bg(primary ? PURPLE : 0xff242a34,primary ? 24 : 28),null));
-        button.setPadding(dp(primary ? 20 : 12),dp(primary ? 20 : 12),dp(primary ? 20 : 12),dp(primary ? 20 : 12));
+        button.setPadding(dp(primary ? 16 : 12),dp(primary ? 16 : 12),dp(primary ? 16 : 12),dp(primary ? 16 : 12));
         button.setOnTouchListener((v,event) -> {
             if (event.getActionMasked() == android.view.MotionEvent.ACTION_DOWN) v.animate().scaleX(.94f).scaleY(.94f).setDuration(90).start();
             else if (event.getActionMasked() == android.view.MotionEvent.ACTION_UP || event.getActionMasked() == android.view.MotionEvent.ACTION_CANCEL) v.animate().scaleX(1f).scaleY(1f).setDuration(150).start();

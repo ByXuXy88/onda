@@ -74,6 +74,13 @@ final class GeminiPreparation {
             throw new IOException("El audio tiene demasiadas redirecciones.");
         }
     }
-    static void prune(Context c,String keep,String activeId){File[] files=directory(c).listFiles();if(files==null)return;AdSegments.Record active=AdSegments.load(c,activeId);String protectedName=active==null?"":active.preparedFile;Arrays.sort(files,Comparator.comparingLong(File::lastModified).reversed());long bytes=0;int count=0;for(File f:files)if(f.getName().equals(keep) || f.getName().equals(protectedName)){bytes+=f.length();count++;}for(File f:files)if(!f.getName().equals(keep) && !f.getName().equals(protectedName)){if(count>=3 || bytes+f.length()>MAX_BYTES)f.delete();else {bytes+=f.length();count++;}}}
+    /** Keep every analysed unfinished file; only unreferenced private files are disposable. */
+    static void prune(Context c,String keep,String activeId){
+        Set<String> retained=new HashSet<>();retained.add(keep);
+        for(Object value:AdSegments.prefs(c).getAll().values())if(value instanceof String){AdSegments.Record record=AdSegments.decode((String)value);if(record!=null && !record.preparedFile.isEmpty())retained.add(record.preparedFile);}
+        File[] files=directory(c).listFiles();if(files!=null)for(File f:files)if(!retained.contains(f.getName()) && file(c,f.getName())!=null)f.delete();
+    }
+    /** Called only at playback completion, never on pause, seek or a manual listened flag. */
+    static void completed(Context c,String id,Uri played){AdSegments.Record record=AdSegments.load(c,id);if(record==null || record.preparedFile.isEmpty())return;File f=file(c,record.preparedFile);if(f!=null && Uri.fromFile(f).equals(played))f.delete();}
     static void clear(Context c,String activeId){File[] files=directory(c).listFiles();AdSegments.Record active=AdSegments.load(c,activeId);String keep=active==null?"":active.preparedFile;if(files!=null)for(File f:files)if(!f.getName().equals(keep))f.delete();}
 }

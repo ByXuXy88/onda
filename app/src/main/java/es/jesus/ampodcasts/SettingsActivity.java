@@ -19,14 +19,14 @@ public final class SettingsActivity extends Activity {
         ScrollView scroll = new ScrollView(this); scroll.setBackgroundColor(Color.BLACK);
         scroll.setOnApplyWindowInsetsListener((v, insets) -> { v.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom()); return insets; });
         content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(dp(20), dp(16), dp(20), dp(24)); scroll.addView(content); setContentView(scroll);
-        ImageButton back = new ImageButton(this); back.setImageDrawable(new ControlIcon("back", 0xffa8c7fa, dp(24))); back.setBackgroundColor(Color.TRANSPARENT); back.setContentDescription("Volver a la biblioteca"); back.setOnClickListener(v -> finish()); content.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
+        ImageButton back = new ImageButton(this); back.setImageDrawable(new ControlIcon("back", 0xffa8c7fa, dp(24))); back.setBackgroundColor(Color.TRANSPARENT); back.setContentDescription("Volver a la biblioteca"); back.setOnClickListener(v -> finish()); UiStyle.icon(back,"back","Volver a la biblioteca"); content.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
         title("Ajustes", 28); title("Calidad de audio y vídeo", 18);
         text("Calidad original · Máxima disponible", 16);
         text("Onda no recomprime los archivos. Si el RSS indica varias versiones, elige la de mayor bitrate; la calidad final depende del archivo publicado y de los formatos que admite tu dispositivo. El vídeo aparece solo cuando el podcast lo ofrece en su RSS.", 13);
         title("Reproducción", 18);
         text("Velocidad de reproducción", 15);
         Spinner speed = new Spinner(this); String[] speeds = {"0,75×", "1× · Normal", "1,25×", "1,5×", "1,75×", "2×"}; float[] values = {.75f, 1f, 1.25f, 1.5f, 1.75f, 2f};
-        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, speeds); adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); speed.setAdapter(adapter);
+        ArrayAdapter<String> adapter = UiStyle.choices(this,speeds); adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); speed.setAdapter(adapter); UiStyle.spinner(speed);
         float saved = repository.prefs.getFloat("speed", 1f); int selected = 1; for (int i = 0; i < values.length; i++) if (values[i] == saved) selected = i; speed.setSelection(selected); speed.setContentDescription("Velocidad de reproducción"); content.addView(speed, new LinearLayout.LayoutParams(-1, dp(48)));
         speed.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() { public void onNothingSelected(AdapterView<?> p) {} public void onItemSelected(AdapterView<?> p, View v, int index, long id) { repository.prefs.edit().putFloat("speed", values[index]).apply(); } });
         option("skipSilence", "Omitir silencios", "Acorta las pausas del audio durante la reproducción.", false);
@@ -36,6 +36,7 @@ public final class SettingsActivity extends Activity {
         action("Saltar anuncios · Gemini Beta", () -> startActivity(new Intent(this, GeminiAdsActivity.class)));
         option("dynamicColors", "Colores del sistema", "En Android 12 o posterior, adapta el acento al fondo del móvil. El fondo sigue siendo negro OLED.", true);
         title("Descargas y biblioteca", 18);
+        text("Caché de Gemini: conserva los episodios pendientes y borra su audio temporal al llegar al final. Las descargas guardadas se gestionan por separado. Android puede liberar la caché si necesita espacio.",13);
         option("wifiOnly", "Descargar solo por Wi‑Fi", "Se aplica a las nuevas descargas. Las que ya están en curso conservan su configuración.", false);
         option("autoRefresh", "Actualizar al abrir un programa", "Busca nuevos episodios cuando abres Onda o cambias de podcast.", true);
         option("oldestFirst", "Episodios antiguos primero", "Invierte el orden del RSS para escuchar desde el principio.", false);
@@ -59,10 +60,10 @@ public final class SettingsActivity extends Activity {
         title("Onda " + BuildConfig.VERSION_NAME, 18); text("Tu biblioteca de podcasts, a tu manera. Tema negro OLED y portadas guardadas en el dispositivo.", 13);
     }
     private void option(String key, String label, String explanation, boolean fallback) {
-        Switch toggle = new Switch(this); toggle.setText(label); toggle.setTextColor(0xfff2f2f2); toggle.setTextSize(16); toggle.setMinHeight(dp(48)); toggle.setChecked(repository.prefs.getBoolean(key, fallback)); content.addView(toggle);
+        Switch toggle = new Switch(this); toggle.setText(label); toggle.setTextColor(0xfff2f2f2); toggle.setTextSize(16); toggle.setMinHeight(dp(48)); toggle.setChecked(repository.prefs.getBoolean(key, fallback)); UiStyle.toggle(toggle); content.addView(toggle,UiStyle.spaced(this));
         toggle.setOnCheckedChangeListener((button, checked) -> { repository.prefs.edit().putBoolean(key, checked).apply(); BackgroundSync.schedule(this); }); text(explanation, 13);
     }
-    private void action(String label, Runnable run) { Button button = new Button(this); button.setText(label); button.setAllCaps(false); button.setMinHeight(dp(48)); button.setOnClickListener(v -> run.run()); content.addView(button); }
+    private void action(String label, Runnable run) { Button button = new Button(this); button.setText(label); button.setAllCaps(false); button.setMinHeight(dp(48)); button.setOnClickListener(v -> run.run()); UiStyle.button(button); content.addView(button,UiStyle.spaced(this)); }
     private void title(String value, int size) { TextView t = text(value, size); t.setTextColor(0xffa8c7fa); t.setTypeface(null, android.graphics.Typeface.BOLD); t.setPadding(0, dp(18), 0, dp(8)); }
     private TextView text(String value, int size) { TextView t = new TextView(this); t.setText(value); t.setTextSize(size); t.setTextColor(0xffa6abb3); t.setPadding(0, 0, 0, dp(10)); content.addView(t); return t; }
     private int dp(int value) { return (int) (value * getResources().getDisplayMetrics().density + .5f); }
