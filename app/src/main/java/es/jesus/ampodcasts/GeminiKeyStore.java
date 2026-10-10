@@ -31,8 +31,19 @@ final class GeminiKeyStore {
     static SharedPreferences prefs(Context c){return c.getSharedPreferences("gemini_private",Context.MODE_PRIVATE);}
     static boolean has(Context c){return prefs(c).contains("encrypted_key");}
     static String get(Context c) throws Exception { String encrypted=prefs(c).getString("encrypted_key","");return encrypted.isEmpty()?"":open(encrypted,deviceKey()); }
+    static String normalize(String key) {
+        key=key==null?"":key.trim();
+        // Credentials are opaque: accept both standard and authorization keys.
+        if(!key.matches("[A-Za-z0-9._~-]{20,2048}"))throw new IllegalArgumentException("Pega solo la clave API completa, sin comillas, espacios ni saltos de línea.");
+        return key;
+    }
+    static String saveError(Exception error) {
+        if(error instanceof IllegalArgumentException)return "Pega solo la clave API completa, sin comillas, espacios ni saltos de línea.";
+        if(error instanceof java.io.IOException)return "No se pudo guardar la clave en este móvil. Vuelve a intentarlo.";
+        return "No se pudo cifrar la clave en este móvil ("+error.getClass().getSimpleName()+"). Vuelve a intentarlo.";
+    }
     static void save(Context c,String key) throws Exception {
-        key=key.trim();if(!key.matches("[A-Za-z0-9_-]{20,200}"))throw new java.io.IOException("Introduce una clave API de Gemini válida");
+        key=normalize(key);
         if(!prefs(c).edit().putString("encrypted_key",seal(key,deviceKey())).commit())throw new java.io.IOException("No se pudo guardar la clave");
     }
     static void remove(Context c){prefs(c).edit().remove("encrypted_key").apply();}
