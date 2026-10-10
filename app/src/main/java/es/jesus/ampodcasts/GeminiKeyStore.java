@@ -46,5 +46,5 @@ final class GeminiKeyStore {
         key=normalize(key);
         if(!prefs(c).edit().putString("encrypted_key",seal(key,deviceKey())).commit())throw new java.io.IOException("No se pudo guardar la clave");
     }
-    static void remove(Context c){prefs(c).edit().remove("encrypted_key").apply();}
+    static void remove(Context c){prefs(c).edit().remove("encrypted_key").putBoolean(GeminiPreparation.ENABLED,false).apply();}
 }

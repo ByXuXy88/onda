@@ -13,17 +13,19 @@ final class GeminiClient {
     interface Body { void write(OutputStream out) throws Exception; }
     interface Source { InputStream open() throws Exception; }
     interface Transport { Reply request(String method,String url,Map<String,String> headers,long length,Body body) throws Exception; }
-    interface Progress { void update(String status); }
+    interface Progress { void update(String status) throws Exception; }
     static final class Reply { final int code; final String text; final Map<String,String> headers;
         Reply(int code,String text,Map<String,String> headers){this.code=code;this.text=text;this.headers=headers;}
         String header(String name){for(Map.Entry<String,String> e:headers.entrySet())if(name.equalsIgnoreCase(e.getKey()))return e.getValue();return "";}
     }
+    interface Guard { void check() throws IOException; }
+    Guard guard=()->{};
     private final String key; private final Transport transport;
     private final AtomicBoolean cancelled=new AtomicBoolean(); private volatile HttpURLConnection active;
     GeminiClient(String key){this.key=key;transport=this::http;}
     GeminiClient(String key,Transport transport){this.key=key;this.transport=transport;}
     void cancel(){cancelled.set(true);HttpURLConnection connection=active;if(connection!=null)connection.disconnect();}
-    void check() throws InterruptedIOException { if(cancelled.get() || Thread.currentThread().isInterrupted())throw new InterruptedIOException("Análisis cancelado"); }
+    void check() throws IOException { if(cancelled.get() || Thread.currentThread().isInterrupted())throw new InterruptedIOException("Análisis cancelado");guard.check(); }
     static URL trusted(String raw) throws Exception { URL url=new URL(raw);if(!"https".equals(url.getProtocol()) || !HOST.equals(url.getHost()) || url.getUserInfo()!=null || (url.getPort()!=-1 && url.getPort()!=443))throw new IOException("Dirección de Gemini no válida");return url; }
     private Map<String,String> headers(){Map<String,String> h=new HashMap<>();h.put("x-goog-api-key",key);return h;}
     private Reply http(String method,String raw,Map<String,String> headers,long length,Body body) throws Exception {

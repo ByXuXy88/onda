@@ -374,6 +374,7 @@ public final class MainActivity extends Activity {
         List<MediaItem> items = new ArrayList<>(); items.add(entry.mediaItem(this, video)); for (LibraryEntry queued : repository.queue()) if (!queued.episode.id.equals(e.id)) items.add(queued.mediaItem(this, false));
         controller.setMediaItems(items, 0, position); controller.prepare(); if (start) controller.play(); updatePlayer(); render();
         if (video && start) startActivity(new Intent(this, VideoActivity.class));
+        else if(start && GeminiPreparation.enabled(this))openPlayer();
     }
     private void syncQueue() {
         if (controller == null || controller.getCurrentMediaItem() == null) return;
@@ -417,13 +418,14 @@ public final class MainActivity extends Activity {
         videoButton.setVisibility(has && controller.getMediaMetadata().extras != null && controller.getMediaMetadata().extras.getBoolean("video", false) ? View.VISIBLE : View.GONE);
         if (!has) { if(fullPlayer!=null)fullPlayer.dismiss(); current.setText("Elige un episodio"); playerProgram.setText("Tu próxima escucha"); bindArtwork(playerArtwork, ""); setIcon(toggle, "play", "Reproducir"); seek.setProgress(0); time.setText("0 min 00 s / —"); return; }
         current.setText(controller.getMediaMetadata().title);
-        playerProgram.setText(controller.getMediaMetadata().artist);
+        boolean preparing=GeminiPreparation.busy(this,controller.getCurrentMediaItem().mediaId);
+        playerProgram.setText(preparing?GeminiKeyStore.prefs(this).getString("preparingStatus","Gemini está leyendo el episodio…"):controller.getMediaMetadata().artist);
         android.net.Uri playingArtwork = controller.getMediaMetadata().artworkUri; bindArtwork(playerArtwork,playingArtwork == null ? "" : playingArtwork.toString()); long duration = Math.max(0, controller.getDuration()), position = Math.max(0, controller.getCurrentPosition());
         if (!seeking) seek.setProgress(duration > 0 ? (int) (position * 1000 / duration) : 0);
         time.setText(clock(position) + " / " + (duration > 0 ? clock(duration) + " · Quedan " + clock(Math.max(0, duration - position)) : "Duración aún no disponible"));
         seek.setContentDescription("Posición: " + clock(position) + (duration > 0 ? " de " + clock(duration) : ""));
         if(fullPlayerUpdate!=null) fullPlayerUpdate.run();
-        setIcon(toggle, controller.isPlaying() || controller.getPlayWhenReady() ? "pause" : "play", controller.isPlaying() || controller.getPlayWhenReady() ? "Pausar" : "Reproducir");
+        setIcon(toggle, preparing?"close":controller.isPlaying() || controller.getPlayWhenReady() ? "pause" : "play", preparing?"Cancelar preparación":controller.isPlaying() || controller.getPlayWhenReady() ? "Pausar" : "Reproducir");
     }
     @Override protected void onSaveInstanceState(Bundle state) { state.putBoolean("home",home); super.onSaveInstanceState(state); }
     @Override public void onBackPressed() { if(!home) showHome(); else super.onBackPressed(); }
@@ -447,7 +449,8 @@ public final class MainActivity extends Activity {
     private void addSecondaryAction(LinearLayout content,Button button) {
         compactAction(button); LinearLayout.LayoutParams params=new LinearLayout.LayoutParams(-2,-2); params.gravity=Gravity.CENTER_HORIZONTAL; params.topMargin=dp(8); content.addView(button,params);
     }
-    private void togglePlayback() { if(controller==null || controller.getCurrentMediaItem()==null) return; if(controller.isPlaying() || controller.getPlayWhenReady()) controller.pause(); else { if(controller.getPlaybackState()==Player.STATE_ENDED) controller.seekTo(replayStart()); controller.prepare(); controller.play(); } updatePlayer(); }
+    private void playerCommand(String command){if(controller instanceof MediaController)((MediaController)controller).sendCustomCommand(new SessionCommand(command,Bundle.EMPTY),Bundle.EMPTY);}
+    private void togglePlayback() { if(controller==null || controller.getCurrentMediaItem()==null) return; if(GeminiPreparation.busy(this,controller.getCurrentMediaItem().mediaId)){playerCommand(PlaybackService.CANCEL_PREPARATION);return;} if(controller.isPlaying() || controller.getPlayWhenReady()) controller.pause(); else { if(controller.getPlaybackState()==Player.STATE_ENDED) controller.seekTo(replayStart()); controller.prepare(); controller.play(); } updatePlayer(); }
     private long replayStart() { android.os.Bundle extras=controller.getMediaMetadata().extras; String feed=extras==null?"":extras.getString("feed",""); long start=SkipRules.offset(repository.prefs,"skipStart",feed),end=SkipRules.offset(repository.prefs,"skipEnd",feed); return start+end<controller.getDuration()?SkipRules.initial(0,start,controller.getDuration()):0; }
     private void jump(boolean forward) { if(controller==null) return; long target=Math.max(0,controller.getCurrentPosition()+(forward?1:-1)*SkipRules.seconds(repository.prefs,forward)*1000L); if(controller.getDuration()>0) target=Math.min(target,controller.getDuration()); controller.seekTo(target); }
     private void openPlayer() {
@@ -467,11 +470,16 @@ public final class MainActivity extends Activity {
         addSecondaryAction(content,actionButton("Anuncios · Gemini Beta",()->{if(controller!=null && controller.getCurrentMediaItem()!=null)startActivity(new Intent(this,GeminiAdsActivity.class).putExtra("episodeId",controller.getCurrentMediaItem().mediaId));}));
         Button undoAd=actionButton("Deshacer último salto de anuncio",()->{if(!(controller instanceof MediaController))return;((MediaController)controller).sendCustomCommand(new SessionCommand(PlaybackService.UNDO_AD,Bundle.EMPTY),Bundle.EMPTY);});addSecondaryAction(content,undoAd);
         TextView adNotice=label("",13,MUTED,false);content.addView(adNotice);
+        TextView preparationNotice=label("",15,PURPLE,false);content.addView(preparationNotice);
+        Button cancelPreparation=actionButton("Cancelar preparación",()->playerCommand(PlaybackService.CANCEL_PREPARATION));addSecondaryAction(content,cancelPreparation);
+        Button withoutAnalysis=actionButton("Escuchar sin análisis",()->new AlertDialog.Builder(this).setTitle("Escuchar sin análisis").setMessage("Este episodio empezará sin esperar a Gemini. El modo automático se mantiene para los demás episodios.").setNegativeButton("Esperar",null).setPositiveButton("Escuchar",(d,w)->playerCommand(PlaybackService.PLAY_WITHOUT_ANALYSIS)).show());addSecondaryAction(content,withoutAnalysis);
         content.addView(actionButton("Guardar una marca en este momento",()->addBookmark())); TextView markTitle=label("Mis marcas",18,PURPLE,true); markTitle.setPadding(0,dp(16),0,dp(8)); content.addView(markTitle); LinearLayout marks=column(0); content.addView(marks);
         String[] shownId={""},marksVersion={""}; List<PlaybackTools.Chapter> chapterList=new ArrayList<>(); List<Button> chapterButtons=new ArrayList<>();
         fullPlayerUpdate=()->{
             if(controller==null || controller.getCurrentMediaItem()==null) { dialog.dismiss(); return; } MediaItem item=controller.getCurrentMediaItem(); long position=controller.getCurrentPosition(),duration=controller.getDuration(); title.setText(item.mediaMetadata.title); program.setText(item.mediaMetadata.artist); bindArtwork(cover,item.mediaMetadata.artworkUri==null?"":item.mediaMetadata.artworkUri.toString());
-            setIcon(play,controller.getPlayWhenReady()?"pause":"play",controller.getPlayWhenReady()?"Pausar":"Reproducir"); play.setImageDrawable(new ControlIcon(controller.getPlayWhenReady()?"pause":"play",0xff102037,dp(32)));
+            boolean preparing=GeminiPreparation.busy(this,item.mediaId);android.content.SharedPreferences preparationState=GeminiKeyStore.prefs(this);String preparationMessage=item.mediaId.equals(preparationState.getString("preparingId",""))?preparationState.getString("preparingStatus",""):"";
+            preparationNotice.setText(preparationMessage);preparationNotice.setVisibility(preparationMessage.isEmpty()?View.GONE:View.VISIBLE);cancelPreparation.setVisibility(preparing?View.VISIBLE:View.GONE);withoutAnalysis.setVisibility(!controller.getPlayWhenReady() && !preparationMessage.isEmpty()?View.VISIBLE:View.GONE);
+            setIcon(play,preparing?"close":controller.getPlayWhenReady()?"pause":"play",preparing?"Cancelar preparación":controller.getPlayWhenReady()?"Pausar":"Reproducir"); play.setImageDrawable(new ControlIcon(preparing?"close":controller.getPlayWhenReady()?"pause":"play",0xff102037,dp(32)));
             java.text.NumberFormat speedFormat=java.text.NumberFormat.getNumberInstance(Locale.forLanguageTag("es")); speedFormat.setMaximumFractionDigits(2); speed.setText(speedFormat.format(repository.prefs.getFloat("speed",1f))+"×"); back.setText("−"+SkipRules.seconds(repository.prefs,false)+" s"); back.setContentDescription("Retroceder "+SkipRules.seconds(repository.prefs,false)+" segundos"); forward.setText("+"+SkipRules.seconds(repository.prefs,true)+" s"); forward.setContentDescription("Avanzar "+SkipRules.seconds(repository.prefs,true)+" segundos");
             progress.setEnabled(duration>0); if(!dragging[0])progress.setProgress(duration>0?(int)(position*1000/duration):0); elapsed.setText(clock(position)+" / "+(duration>0?clock(duration)+" · Quedan "+clock(Math.max(0,duration-position)):"Duración aún no disponible")); progress.setContentDescription("Posición: "+clock(position)); video.setVisibility(item.mediaMetadata.extras!=null && item.mediaMetadata.extras.getBoolean("video",false)?View.VISIBLE:View.GONE);
             if(!shownId[0].equals(item.mediaId)) { shownId[0]=item.mediaId; marksVersion[0]=""; chapterList.clear(); chapterButtons.clear(); chapters.removeAllViews(); LibraryEntry entry=repository.entry(item.mediaId); chapters.addView(label(entry==null || entry.episode.chaptersUrl.isEmpty()?"El editor no publica capítulos para este episodio.":"Cargando capítulos…",14,MUTED,false));

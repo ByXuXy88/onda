@@ -269,7 +269,7 @@ final class Repository {
     Uri localUri(Episode e) {
         return downloadStatus(e) == DownloadManager.STATUS_SUCCESSFUL ? downloads.getUriForDownloadedFile(downloadId(e)) : null;
     }
-    Uri playbackUri(Episode e) { Uri local = localUri(e); return local != null ? local : Uri.parse(e.url); }
+    Uri playbackUri(Episode e) { LibraryEntry entry=entry(e.id); Uri prepared=entry==null?null:GeminiPreparation.readyUri(context,this,entry); if(prepared!=null)return prepared; Uri local = localUri(e); return local != null ? local : Uri.parse(e.url); }
     void download(Episode e) { download(e, prefs.getBoolean("wifiOnly", false), false); }
     void download(Episode e, boolean wifiOnly, boolean automatic) {
         if (downloadStatus(e) == DownloadManager.STATUS_SUCCESSFUL || downloadStatus(e) == DownloadManager.STATUS_RUNNING || downloadStatus(e) == DownloadManager.STATUS_PENDING || downloadStatus(e) == DownloadManager.STATUS_PAUSED) return;
